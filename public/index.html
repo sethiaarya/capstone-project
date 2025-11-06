@@ -2,86 +2,118 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Golden Twilight Travel Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Golden Twilight • Explore</title>
 
-  <!-- Tailwind + Custom Palette -->
+  <!-- Tailwind CDN (okay for local dev) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            twilight: { 900:"#000814", 800:"#001D3D", 700:"#003566" },
-            gold: { 500:"#FFC300", 400:"#FFD60A" },
-            sand: "#F5F5F4",
-            glow: "#F8FAFC"
-          },
-          boxShadow: { glow: "0 10px 30px rgba(0,0,0,.25)" }
+            // Palette: deep navy + golden accents
+            twilight: "#001A33",   /* ~#000814 → softened */
+            midnight: "#0B2A4A",
+            skyfade: "#E9EEF2",
+            gold: "#FFC300",
+            sand: "#FFF3C4",
+            cardbg: "#F6F7F9"
+          }
         }
       }
     }
   </script>
 
   <style>
-    /* Soft ombré using your palette */
-    .bg-ombre {
+    /* Soft ombré header background from deep navy to warm light */
+    body {
       background:
-        linear-gradient(to bottom,
-          #001D3D 0%,
-          #003566 35%,
-          rgba(248,250,252,0.12) 70%,
-          rgba(255,195,0,0.10) 100%
-        );
+        linear-gradient(180deg, #0b2a4a 0%, #113a62 45%, #dfe7ee 90%, #fff7e6 100%) fixed;
+    }
+    .card-img {
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      width: 100%;
+      border-top-left-radius: 1rem;
+      border-top-right-radius: 1rem;
+    }
+    .card {
+      box-shadow:
+        0 10px 25px rgba(0,0,0,.20),
+        inset 0 1px 0 rgba(255,255,255,.35);
     }
   </style>
 </head>
-
-<body class="bg-gradient-to-b from-twilight-900 via-twilight-800 to-glow min-h-screen text-glow overflow-y-auto">
-
-<body class="bg-ombre text-glow min-h-screen">
-  <!-- Header -->
-  <header class="text-center py-12">
-    <h1 class="text-4xl font-bold text-gold-500 drop-shadow-md">Explore the World</h1>
-    <p class="mt-3 text-sand/90">Where will your next adventure take you?</p>
-
-    <input
-      type="text"
-      id="search"
-      placeholder="Search destination..."
-      class="mt-6 w-4/5 md:w-1/2 p-3 rounded-xl bg-white/10 backdrop-blur text-glow placeholder:sand/70 border border-white/20 focus:border-gold-400 focus:ring-2 focus:ring-gold-400 outline-none"
-    />
-
+<body class="text-slate-800 min-h-screen">
+  <!-- Top bar -->
+  <div class="flex items-center justify-between px-6 pt-4 text-white">
+    <div class="font-semibold">Golden Twilight</div>
     <a href="personal_dashboard.html"
-   class="absolute top-6 right-6 bg-gold-500 text-twilight-900 px-4 py-2 rounded-lg shadow hover:brightness-110 transition">
-  Dashboard
-</a>
-
-  </header>
-
-  <!-- Destination Cards -->
-  <section
-    id="destinations"
-    class="grid sm:grid-cols-2 md:grid-cols-3 gap-8 p-10 max-w-7xl mx-auto"
-  ></section>
-
-  <!-- Modal -->
-  <div
-    id="modal"
-    class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm"
-  >
-    <div class="bg-white/95 text-twilight rounded-xl max-w-md w-full relative shadow-glow">
-      <button id="closeModal" class="text-twilight text-2xl absolute right-4 top-2 hover:text-gold-500">&times;</button>
-
-      <div class="p-6">
-        <h2 id="modalTitle" class="text-2xl font-bold text-twilight mb-3"></h2>
-        <p id="modalDesc" class="mb-4 text-twilight/80"></p>
-        <ul id="modalDetail" class="space-y-2 text-sm text-twilight/80"></ul>
-      </div>
-    </div>
+       class="bg-gold text-black font-semibold px-4 py-2 rounded-lg shadow hover:brightness-95">Dashboard</a>
   </div>
 
-  <!-- IMPORTANT: new filename ensures no cached script -->
-  <script src="script.nyc.js?v=1001"></script>
+  <!-- Header -->
+  <header class="text-center py-8">
+    <h1 class="text-4xl md:text-5xl font-extrabold text-gold drop-shadow">Explore the World</h1>
+    <p class="mt-2 text-white/90">Where will your next adventure take you?</p>
+    <div class="mt-6 max-w-3xl mx-auto">
+      <input id="search"
+             class="w-full rounded-2xl bg-white/85 focus:bg-white transition p-3 md:p-4 outline-none ring-2 ring-transparent focus:ring-gold placeholder:text-slate-400"
+             placeholder="Search destination..." />
+    </div>
+  </header>
+
+  <!-- Cards -->
+  <main class="max-w-7xl mx-auto px-6 pb-16">
+    <section id="destinations"
+             class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <!-- JS injects cards here -->
+    </section>
+
+    <!-- Below-the-fold ribbons -->
+    <section class="mt-12 grid md:grid-cols-2 gap-6">
+      <div class="rounded-2xl p-6 bg-white/80 backdrop-blur card">
+        <h3 class="font-semibold text-slate-900">Your Saved Destinations</h3>
+        <p id="savedEmpty" class="text-slate-500 mt-2">Saved destinations unavailable.</p>
+        <ul id="savedList" class="mt-3 space-y-2"></ul>
+      </div>
+      <div class="rounded-2xl p-6 bg-white/80 backdrop-blur card">
+        <h3 class="font-semibold text-slate-900">Upcoming</h3>
+        <p id="upcomingEmpty" class="text-slate-500 mt-2">No upcoming trips yet.</p>
+        <ul id="upcomingList" class="mt-3 space-y-2"></ul>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-slate-900 text-sky-100">
+    <div class="max-w-7xl mx-auto px-6 py-12 grid md:grid-cols-3 gap-8">
+      <div>
+        <div class="text-gold font-semibold">Golden Twilight</div>
+        <p class="mt-2 text-sky-200">Transform your travel dreams into reality with intelligent discovery and planning tools.</p>
+      </div>
+      <div>
+        <div class="font-semibold text-white">Explore</div>
+        <ul class="mt-2 space-y-2">
+          <li><a class="hover:underline" href="#destinations">Destinations</a></li>
+          <li><a class="hover:underline" href="personal_dashboard.html">Trip Planner</a></li>
+          <li><span class="opacity-60">Local Insights</span></li>
+          <li><span class="opacity-60">Community</span></li>
+        </ul>
+      </div>
+      <div>
+        <div class="font-semibold text-white">Support</div>
+        <ul class="mt-2 space-y-2">
+          <li><span class="opacity-60">Help Center</span></li>
+          <li><span class="opacity-60">Contact Us</span></li>
+          <li><span class="opacity-60">Privacy Policy</span></li>
+          <li><span class="opacity-60">Terms of Service</span></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/script.js"></script>
 </body>
 </html>
