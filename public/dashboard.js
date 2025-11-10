@@ -1,202 +1,230 @@
-/* Dashboard behavior: Trips + Wishlist + Saved ribbon (Travel blog aesthetic) */
-
-const $ = (q, root = document) => root.querySelector(q);
-const $$ = (q, root = document) => [...root.querySelectorAll(q)];
-
-const tripListEl = $("#tripList");
-const wishListEl = $("#wishList");
-const savedRibbonEl = $("#savedRibbon");
-
-async function api(path, opts = {}) {
-  const res = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
-    ...opts,
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
-/* ---------- TRIPS ---------- */
-async function fetchTrips() {
-  try {
-    const data = await api("/api/trips");
-    renderTrips(data || []);
-  } catch (e) {
-    tripListEl.innerHTML = `<div class="text-red-600">Could not load trips.</div>`;
-  }
-}
-
-function renderTrips(trips) {
-  if (!trips.length) {
-    tripListEl.innerHTML =
-      `<div class="text-ink/60">No trips yet — plan one with the form above.</div>`;
-    return;
-  }
-  tripListEl.innerHTML = trips
-    .map(t => {
-      const start = t.start_date ? new Date(t.start_date).toDateString() : "—";
-      const end   = t.end_date   ? new Date(t.end_date).toDateString() : "—";
-      const budget = typeof t.budget === "number" ? `$${t.budget.toLocaleString()}` : "—";
-      return `
-        <article class="bg-white/85 rounded-xl border border-black/5 p-4">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <h3 class="font-semibold text-twilight">${escapeHTML(t.title || "Untitled Trip")}</h3>
-              <p class="text-ink/70 text-sm">${escapeHTML(t.destination || "Somewhere")} • ${start} → ${end}</p>
-            </div>
-            <div class="text-ink/80 text-sm">Budget: <span class="font-semibold">${budget}</span></div>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
-}
-
-$("#tripForm")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const body = {
-    title: $("#tripTitle").value.trim(),
-    destination: $("#tripDestination").value.trim(),
-    start_date: $("#tripStart").value || null,
-    end_date: $("#tripEnd").value || null,
-    budget: $("#tripBudget").value ? Number($("#tripBudget").value) : null,
-  };
-  if (!body.title || !body.destination) return toast("Please fill title + destination");
-
-  try {
-    await api("/api/trips", { method: "POST", body: JSON.stringify(body) });
-    e.target.reset();
-    toast("Trip added", "ok");
-    fetchTrips();
-  } catch (err) {
-    toast("Could not add trip", "err");
-  }
-});
-
-/* ---------- WISHLIST ---------- */
-async function fetchWishlist() {
-  try {
-    const data = await api("/api/wishlist");
-    renderWishlist(data || []);
-    renderSavedRibbon(data || []);
-  } catch {
-    wishListEl.innerHTML = `<div class="text-red-600">Could not load wishlist.</div>`;
-  }
-}
-
-function renderWishlist(items) {
-  if (!items.length) {
-    wishListEl.innerHTML = `<div class="text-ink/60">Nothing saved yet. Add a dream spot ✨</div>`;
-    return;
-  }
-  wishListEl.innerHTML = items
-    .map(w => `
-      <div class="bg-white/85 rounded-lg border border-black/5 px-3 py-2 flex items-center justify-between">
-        <div class="font-medium text-twilight">${escapeHTML(w.destination)}</div>
-        <button data-id="${w.id}" class="wish-del text-sm text-red-600 hover:underline">Remove</button>
-      </div>
-    `)
-    .join("");
-
-  // remove handlers
-  $$(".wish-del").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      try {
-        await api(`/api/wishlist/${btn.dataset.id}`, { method: "DELETE" });
-        fetchWishlist();
-        toast("Removed from wishlist", "ok");
-      } catch {
-        toast("Could not remove", "err");
-      }
-    });
-  });
-}
-
-$("#wishForm")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const dest = $("#wishInput").value.trim();
-  if (!dest) return;
-  try {
-    await api("/api/wishlist", { method: "POST", body: JSON.stringify({ destination: dest }) });
-    $("#wishInput").value = "";
-    fetchWishlist();
-    toast("Saved ✨", "ok");
-  } catch {
-    toast("Could not save", "err");
-  }
-});
-
-/* ---------- SAVED RIBBON (from wishlist) ---------- */
-function renderSavedRibbon(items) {
-  if (!items.length) {
-    savedRibbonEl.innerHTML = `<div class="text-ink/60">Save places to see them here.</div>`;
-    return;
-  }
-  savedRibbonEl.innerHTML = items
-    .map(w => {
-      const photo = pickPhotoFor(w.destination);
-      return `
-        <div class="min-w-[240px] bg-white/90 rounded-xl shadow-soft overflow-hidden border border-black/5">
-          <div class="h-36 bg-center bg-cover" style="background-image:url('${photo}')"></div>
-          <div class="p-3">
-            <div class="font-semibold text-twilight">${escapeHTML(w.destination)}</div>
-            <div class="text-ink/60 text-sm">Wishlist</div>
-          </div>
-        </div>
-      `;
-    })
-    .join("");
-}
-
-/* ---------- Helpers ---------- */
-function toast(msg, type="info") {
-  const el = document.createElement("div");
-  el.className = `fixed z-50 bottom-5 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg text-sm
-    ${type==="ok" ? "bg-twilight text-glow" : type==="err" ? "bg-red-600 text-white" : "bg-ink text-white"}`;
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1800);
-}
-
-// very small destination→photo mapper (extend as you like)
-function pickPhotoFor(name = "") {
-  const n = name.toLowerCase();
-  if (n.includes("tokyo") || n.includes("japan")) {
-    return "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&q=80&w=1600";
-  }
-  if (n.includes("new york") || n.includes("nyc")) {
-    return "/img/nyc.jpg"; // your local NYC asset
-  }
-  if (n.includes("paris")) {
-    return "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=1600";
-  }
-  if (n.includes("rome")) {
-    return "https://images.unsplash.com/photo-1548285377-0a79db094e3f?auto=format&fit=crop&q=80&w=1600";
-  }
-  if (n.includes("bali")) {
-    return "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&q=80&w=1600";
-  }
-  if (n.includes("dubai")) {
-    return "https://images.unsplash.com/photo-1526779259212-939e64788e3c?auto=format&fit=crop&q=80&w=1600";
-  }
-  return "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=1600";
-}
-
-function escapeHTML(s="") {
-  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-
-/* ---------- Init ---------- */
+/* public/dashboard.js (with automatic key migration) */
 document.addEventListener("DOMContentLoaded", () => {
-  fetchTrips();
-  fetchWishlist();
+  console.log("✅ dashboard.js loaded");
 
-  // Optional demo autofill to speed testing
-  $("#demoFill")?.addEventListener("click", () => {
-    $("#tripTitle").value = "Japan 2026";
-    $("#tripDestination").value = "Tokyo";
-    $("#tripStart").value = "2026-11-22";
-    $("#tripEnd").value = "2026-11-30";
-    $("#tripBudget").value = "2800";
+  /* ---------- Canonical keys ---------- */
+  const LS = {
+    SAVED: "gt_saved",         // [{id,title,subtitle,img,price,labels,whenSaved}]
+    TRIPS: "gt_trips",         // [{id,title,dest,start,end,budget,ts}]
+    WISHLIST: "gt_wishlist",   // [{id,place,note,ts}]
+    ACTIVITY: "gt_activity"    // [{id,type,title,meta,ts}]
+  };
+
+  /* ---------- Likely legacy key names (from earlier sessions) ---------- */
+  const LEGACY_KEYS = {
+    [LS.SAVED]:   ["saved", "savedDestinations", "gtSaved", "gw_saved", "userSaved"],
+    [LS.TRIPS]:   ["trips", "userTrips", "gtTrips", "gw_trips"],
+    [LS.WISHLIST]:["wishlist", "userWishlist", "gtWishlist", "gw_wishlist"],
+    [LS.ACTIVITY]:["activity", "userActivity", "gtActivity", "gw_activity"]
+  };
+
+  /* ---------- Helpers ---------- */
+  const $ = (s) => document.querySelector(s);
+  const get = (k) => {
+    try { return JSON.parse(localStorage.getItem(k) || "[]"); }
+    catch (_) { return []; }
+  };
+  const set = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+  const has = (k) => localStorage.getItem(k) !== null;
+  const nowISO = () => new Date().toISOString();
+  const fmtDate = iso => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, {
+      month: "short", day: "numeric", year: "numeric",
+      hour: "numeric", minute: "2-digit"
+    });
+  };
+
+  /* ---------- One-time migration: copy legacy -> canonical if canonical empty ---------- */
+  function migrateKey(canonicalKey) {
+    // If canonical already has data, do nothing.
+    const canonVal = get(canonicalKey);
+    if (Array.isArray(canonVal) && canonVal.length) return;
+
+    const candidates = LEGACY_KEYS[canonicalKey] || [];
+    for (const legacyKey of candidates) {
+      if (!has(legacyKey)) continue;
+      const legacyVal = get(legacyKey);
+      if (Array.isArray(legacyVal) && legacyVal.length) {
+        console.log(`🔁 Migrating ${legacyKey} → ${canonicalKey} (${legacyVal.length} items)`);
+        set(canonicalKey, legacyVal);
+        return;
+      }
+    }
+  }
+
+  function runMigrations() {
+    migrateKey(LS.SAVED);
+    migrateKey(LS.TRIPS);
+    migrateKey(LS.WISHLIST);
+    migrateKey(LS.ACTIVITY);
+  }
+
+  /* ---------- DOM ---------- */
+  const kpiSaved = $("#kpiSaved");
+  const kpiTrips = $("#kpiTrips");
+  const kpiWishlist = $("#kpiWishlist");
+  const kpiActivity = $("#kpiActivity");
+
+  const tripsList = $("#tripsList");
+  const activityList = $("#activityList");
+  const savedList = $("#savedList");
+  const savedCount = $("#savedCount");
+  const wishlistList = $("#wishlistList");
+
+  const tripForm = $("#tripForm");
+  const tripTitle = $("#tripTitle");
+  const tripDest = $("#tripDest");
+  const tripStart = $("#tripStart");
+  const tripEnd = $("#tripEnd");
+  const tripBudget = $("#tripBudget");
+
+  const wishForm = $("#wishForm");
+  const wishInput = $("#wishInput");
+  const wishNote = $("#wishNote");
+
+  /* ---------- Renderers ---------- */
+  function renderTrips() {
+    const trips = get(LS.TRIPS);
+    kpiTrips.textContent = trips.length;
+
+    tripsList.innerHTML = trips.length
+      ? trips.map(t => tripCard(t)).join("")
+      : `<div class="rounded-xl border border-slate-200 p-4 text-slate-500">No trips yet. Add one above.</div>`;
+  }
+
+  function renderSaved() {
+    const saved = get(LS.SAVED);
+    kpiSaved.textContent = saved.length;
+    savedCount.textContent = saved.length;
+
+    if (!saved.length) {
+      savedList.innerHTML = `<div class="rounded-xl border border-slate-200 p-3 text-slate-500">No saved destinations yet. Tap the heart on Explore ✨</div>`;
+      return;
+    }
+
+    savedList.innerHTML = saved.map(s => `
+      <div class="flex items-center gap-3 p-3 rounded-xl border border-slate-200">
+        <img src="${s.img || ""}" alt="" class="w-14 h-14 object-cover rounded-lg border"/>
+        <div class="min-w-0">
+          <p class="font-medium truncate">${s.title || "Saved place"}</p>
+          <p class="text-xs text-slate-500 truncate">${s.subtitle || ""}</p>
+        </div>
+        <span class="ml-auto text-xs text-slate-400">${fmtDate(s.whenSaved)}</span>
+      </div>
+    `).join("");
+  }
+
+  function renderWishlist() {
+    const wl = get(LS.WISHLIST);
+    kpiWishlist.textContent = wl.length;
+
+    wishlistList.innerHTML = wl.length
+      ? wl.map(w => `
+          <div class="flex items-center justify-between p-3 rounded-xl border border-slate-200">
+            <div>
+              <p class="font-medium">${w.place}</p>
+              <p class="text-xs text-slate-500">${w.note || ""}</p>
+            </div>
+            <span class="text-xs text-slate-400">${fmtDate(w.ts)}</span>
+          </div>
+        `).join("")
+      : `<div class="rounded-xl border border-slate-200 p-3 text-slate-500">No wishlist items yet.</div>`;
+  }
+
+  function renderActivity() {
+    const all = get(LS.ACTIVITY);
+    const act = all.slice(-20).reverse();
+    const last30d = all.filter(a => (Date.now() - new Date(a.ts).getTime()) <= 30*24*3600*1000);
+    kpiActivity.textContent = last30d.length;
+
+    activityList.innerHTML = act.length
+      ? act.map(a => `
+          <div class="flex items-center gap-3 p-3 rounded-xl border border-slate-200">
+            <div class="w-8 h-8 rounded-full grid place-items-center text-white
+              ${a.type === "Trip" ? "bg-blue-500" : a.type === "Wishlist" ? "bg-amber-500" : "bg-slate-400"}">
+              ${a.type?.[0] || "•"}
+            </div>
+            <div class="min-w-0">
+              <p class="font-medium truncate">${a.title || a.type}</p>
+              <p class="text-xs text-slate-500 truncate">${a.meta || ""}</p>
+            </div>
+            <span class="ml-auto text-xs text-slate-400">${fmtDate(a.ts)}</span>
+          </div>
+        `).join("")
+      : `<div class="rounded-xl border border-slate-200 p-4 text-slate-500">No recent activity.</div>`;
+  }
+
+  const tripCard = (t) => `
+    <div class="rounded-xl border border-slate-200 p-4">
+      <div class="flex items-start justify-between">
+        <div>
+          <p class="font-semibold">${t.title || "Untitled trip"}</p>
+          <p class="text-sm text-slate-600">${t.dest || "—"}</p>
+          <p class="text-xs text-slate-500 mt-1">
+            ${t.start ? new Date(t.start).toLocaleDateString() : "—"}
+            → ${t.end ? new Date(t.end).toLocaleDateString() : "—"}
+          </p>
+          <p class="text-xs text-slate-500">${t.budget ? `Budget: $${Number(t.budget).toFixed(2)}` : ""}</p>
+        </div>
+        <span class="px-2 py-1 text-xs rounded-lg bg-slate-100 text-slate-600">Active</span>
+      </div>
+    </div>
+  `;
+
+  /* ---------- Actions ---------- */
+  $("#tripForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const title = (tripTitle.value || "").trim();
+    const dest = (tripDest.value || "").trim();
+    if (!title || !dest) {
+      alert("Please enter a trip title and destination.");
+      return;
+    }
+    const newTrip = {
+      id: crypto.randomUUID(),
+      title,
+      dest,
+      start: tripStart.value || null,
+      end: tripEnd.value || null,
+      budget: tripBudget.value || null,
+      ts: nowISO()
+    };
+    const trips = get(LS.TRIPS); trips.push(newTrip); set(LS.TRIPS, trips);
+
+    const act = get(LS.ACTIVITY);
+    act.push({ id: crypto.randomUUID(), type: "Trip", title: `Trip — ${title}`, meta: dest, ts: nowISO() });
+    set(LS.ACTIVITY, act);
+
+    e.target.reset();
+    renderTrips(); renderActivity();
+    kpiTrips.textContent = get(LS.TRIPS).length;
+    kpiActivity.textContent = get(LS.ACTIVITY).filter(a => (Date.now() - new Date(a.ts).getTime()) <= 30*24*3600*1000).length;
   });
+
+  $("#wishForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const place = (wishInput.value || "").trim();
+    const note = (wishNote.value || "").trim();
+    if (!place) { alert("Please enter a place for wishlist."); return; }
+
+    const wl = get(LS.WISHLIST); wl.push({ id: crypto.randomUUID(), place, note, ts: nowISO() }); set(LS.WISHLIST, wl);
+
+    const act = get(LS.ACTIVITY);
+    act.push({ id: crypto.randomUUID(), type: "Wishlist", title: `Wishlist — ${place}`, meta: note, ts: nowISO() });
+    set(LS.ACTIVITY, act);
+
+    e.target.reset();
+    renderWishlist(); renderActivity();
+    kpiWishlist.textContent = get(LS.WISHLIST).length;
+    kpiActivity.textContent = get(LS.ACTIVITY).filter(a => (Date.now() - new Date(a.ts).getTime()) <= 30*24*3600*1000).length;
+  });
+
+  /* ---------- Boot ---------- */
+  runMigrations();       // 👈 bring back your old data
+  renderTrips();
+  renderSaved();
+  renderWishlist();
+  renderActivity();
 });

@@ -1,105 +1,129 @@
 // server/index.js
 import express from "express";
-import path from "path";
+import { Pool } from "pg";
 import dotenv from "dotenv";
+import path from "path";
 import { fileURLToPath } from "url";
-import pkg from "pg";
 
 dotenv.config();
-const { Pool } = pkg;
-
-// --- Paths ---
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// --- App ---
 const app = express();
-app.use(express.json());
 
-// Serve the /public folder statically
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
+
+// DB
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.PGURL,
+  ssl: { rejectUnauthorized: false }
+});
+
+// Middleware
+app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "public")));
 
-// --- DB ---
-const DATABASE_URL = process.env.DATABASE_URL || process.env.PGDATABASE_URL || process.env.PGURI || process.env.POSTGRES_URL;
-
-if (!DATABASE_URL) {
-  console.error("❌ DATABASE_URL missing in .env");
-}
-
-const pool = new Pool({
-  connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
-});
-
-// --- API ---
-
 // Health
-app.get("/api/health", async (_req, res) => {
-  try {
-    const r = await pool.query("SELECT NOW()");
-    res.json({ ok: true, time: r.rows[0].now });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ ok: false, error: e.message });
-  }
+app.get("/api/health", async (_req,res)=>{
+  try{ await pool.query("select 1"); res.json({ok:true}); }
+  catch(e){ res.status(500).json({ok:false,error:String(e)}); }
 });
 
-// Trips
-app.get("/api/trips", async (_req, res) => {
-  try {
-    const { rows } = await pool.query(
-      "SELECT id, title, destination, start_date, end_date, budget, created_at FROM trips ORDER BY created_at DESC"
+/* ======== READ ======== */
+app.get("/api/trips", async (_req,res)=>{
+  try{
+    const q = await pool.query(
+      `select id, title, destination, start_date, end_date, budget, created_at
+         from trips
+         order by start_date asc, created_at desc`
     );
-    res.json(rows);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: e.message });
-  }
+    res.json(q.rows);
+  }catch(e){ res.status(500).json({error:String(e)}); }
 });
 
-app.post("/api/trips", async (req, res) => {
-  try {
+app.get("/api/wishlist", async (_req,res)=>{
+  try{
+    const q = await pool.query(
+      `select id,
+              destination as place,
+              coalesce(note,'') as note,
+              added_at
+         from wishlist
+         order by added_at desc`
+    );
+    res.json(q.rows);
+  }catch(e){ res.status(500).json({error:String(e)}); }
+});
+
+app.get("/api/saved", async (_req,res)=>{
+  try{
+    const q = await pool.query(
+      `select id, destination_title, destination_region, image_url, saved_at
+         from saved_destinations
+         order by saved_at desc`
+    );
+    res.json(q.rows);
+  }catch(e){ res.status(500).json({error:String(e)}); }
+});
+
+app.get("/api/activity", async (_req,res)=>{
+  try{
+    const [trips, wish, saved] = await Promise.all([
+      pool.query(`select 'Trip' as type, title, destination as detail, created_at from trips`),
+      pool.query(`select 'Wishlist' as type, destination as title, coalesce(note,'') as detail, added_at as created_at from wishlist`),
+      pool.query(`select 'Saved' as type, destination_title as title, coalesce(destination_region,'') as detail, saved_at as created_at from saved_destinations`)
+    ]);
+    const all = [...trips.rows, ...wish.rows, ...saved.rows]
+      .sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+    res.json(all);
+  }catch(e){ res.status(500).json({error:String(e)}); }
+});
+
+/* ======== WRITE ======== */
+app.post("/api/trips", async (req,res)=>{
+  try{
     const { title, destination, start_date, end_date, budget } = req.body;
-    const { rows } = await pool.query(
-      `INSERT INTO trips (title, destination, start_date, end_date, budget)
-       VALUES ($1,$2,$3,$4,$5)
-       RETURNING id, title, destination, start_date, end_date, budget, created_at`,
-      [title, destination, start_date, end_date, budget ?? null]
+    const q = await pool.query(
+      `insert into trips (title, destination, start_date, end_date, budget)
+       values ($1,$2,$3,$4,$5)
+       returning id, title, destination, start_date, end_date, budget, created_at`,
+      [title, destination, start_date, end_date, budget]
     );
-    res.status(201).json(rows[0]);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: e.message });
-  }
+    res.json(q.rows[0]);
+  }catch(e){ res.status(500).json({error:String(e)}); }
 });
 
-// Wishlist
-app.get("/api/wishlist", async (_req, res) => {
-  try {
-    const { rows } = await pool.query(
-      "SELECT id, destination, added_at FROM wishlist ORDER BY added_at DESC"
-    );
-    res.json(rows);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: e.message });
-  }
+app.post("/api/wishlist", async (req,res)=>{
+  try{
+    const { place, note } = req.body;
+    // tolerate missing 'note' column by trying; if it fails, try without note
+    try{
+      const q = await pool.query(
+        `insert into wishlist (destination, note)
+         values ($1,$2)
+         returning id, destination as place, coalesce(note,'') as note, added_at`,
+        [place, note]
+      );
+      return res.json(q.rows[0]);
+    }catch(inner){
+      // fallback if 'note' doesn't exist
+      const q2 = await pool.query(
+        `insert into wishlist (destination)
+         values ($1)
+         returning id, destination as place, '' as note, added_at`,
+        [place]
+      );
+      return res.json(q2.rows[0]);
+    }
+  }catch(e){ res.status(500).json({error:String(e)}); }
 });
 
-app.post("/api/wishlist", async (req, res) => {
-  try {
-    const { destination } = req.body;
-    const { rows } = await pool.query(
-      "INSERT INTO wishlist (destination) VALUES ($1) RETURNING id, destination, added_at",
-      [destination]
-    );
-    res.status(201).json(rows[0]);
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: e.message });
-  }
+/* HTML fallbacks */
+app.get("/personal_dashboard.html", (_req,res)=>{
+  res.sendFile(path.join(__dirname,"..","public","personal_dashboard.html"));
+});
+app.get("/index.html", (_req,res)=>{
+  res.sendFile(path.join(__dirname,"..","public","index.html"));
 });
 
-// --- Start ---
+// Boot
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
+app.listen(PORT, ()=> console.log(`✅ Server running at http://localhost:${PORT}`));
