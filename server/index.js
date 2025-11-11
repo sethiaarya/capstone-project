@@ -116,12 +116,12 @@ app.post("/api/wishlist", async (req,res)=>{
   }catch(e){ res.status(500).json({error:String(e)}); }
 });
 
-/* HTML fallbacks */
-app.get("/personal_dashboard.html", (_req,res)=>{
-  res.sendFile(path.join(__dirname,"..","public","personal_dashboard.html"));
+/* HTML fallbacks - serve pages from organized structure */
+app.get("/pages/flights.html", (_req,res)=>{
+  res.sendFile(path.join(__dirname,"..","public","pages","flights.html"));
 });
-app.get("/index.html", (_req,res)=>{
-  res.sendFile(path.join(__dirname,"..","public","index.html"));
+app.get("/pages/personal_dashboard.html", (_req,res)=>{
+  res.sendFile(path.join(__dirname,"..","public","pages","personal_dashboard.html"));
 });
 
 // Boot
