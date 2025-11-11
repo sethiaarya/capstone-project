@@ -7,8 +7,21 @@
     "start": "node server/index.js"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "pg": "^8.16.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sethiaarya/capstone-project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/sethiaarya/capstone-project/issues"
+  },
+  "homepage": "https://github.com/sethiaarya/capstone-project#readme"
 }

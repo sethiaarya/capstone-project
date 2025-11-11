@@ -1,129 +1,181 @@
 // server/index.js
-import express from "express";
-import { Pool } from "pg";
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
+const { Pool } = require("pg");
+const { randomUUID } = require("crypto");
 
-dotenv.config();
+// Load .env from project root
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
+
 const app = express();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname  = path.dirname(__filename);
-
-// DB
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.PGURL,
-  ssl: { rejectUnauthorized: false }
-});
-
-// Middleware
+app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "..", "public")));
 
-// Health
-app.get("/api/health", async (_req,res)=>{
-  try{ await pool.query("select 1"); res.json({ok:true}); }
-  catch(e){ res.status(500).json({ok:false,error:String(e)}); }
+// serve the frontend from /public
+const publicDir = path.join(__dirname, "../public");
+app.use(express.static(publicDir));
+console.log("Serving static from:", publicDir);
+
+// ----- DB -----
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  // sslmode=require is already in your Neon URL
 });
 
-/* ======== READ ======== */
-app.get("/api/trips", async (_req,res)=>{
-  try{
-    const q = await pool.query(
-      `select id, title, destination, start_date, end_date, budget, created_at
-         from trips
-         order by start_date asc, created_at desc`
+// Create tables (ids inserted from server using randomUUID)
+async function ensureTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS trips (
+      id UUID PRIMARY KEY,
+      title TEXT NOT NULL,
+      dest TEXT NOT NULL,
+      start_date DATE NOT NULL,
+      end_date DATE NOT NULL,
+      budget NUMERIC(12,2)
     );
-    res.json(q.rows);
-  }catch(e){ res.status(500).json({error:String(e)}); }
-});
+  `);
 
-app.get("/api/wishlist", async (_req,res)=>{
-  try{
-    const q = await pool.query(
-      `select id,
-              destination as place,
-              coalesce(note,'') as note,
-              added_at
-         from wishlist
-         order by added_at desc`
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS wishlist (
+      id UUID PRIMARY KEY,
+      place TEXT,
+      note TEXT,
+      date DATE
     );
-    res.json(q.rows);
-  }catch(e){ res.status(500).json({error:String(e)}); }
-});
+  `);
 
-app.get("/api/saved", async (_req,res)=>{
-  try{
-    const q = await pool.query(
-      `select id, destination_title, destination_region, image_url, saved_at
-         from saved_destinations
-         order by saved_at desc`
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS saved_destinations (
+      id UUID PRIMARY KEY,
+      city TEXT NOT NULL,
+      country TEXT NOT NULL,
+      region TEXT,
+      date DATE
     );
-    res.json(q.rows);
-  }catch(e){ res.status(500).json({error:String(e)}); }
+  `);
+
+  console.log("✅ Tables ready (trips, wishlist, saved_destinations)");
+}
+
+// ----- Mappers -----
+const mapTripRow = (r) => ({
+  id: r.id,
+  title: r.title,
+  dest: r.dest,
+  start: r.start_date?.toISOString().slice(0, 10),
+  end: r.end_date?.toISOString().slice(0, 10),
+  budget: r.budget === null ? null : Number(r.budget),
+});
+const mapWishRow = (r) => ({
+  id: r.id,
+  place: r.place,
+  note: r.note,
+  date: r.date?.toISOString().slice(0, 10),
+});
+const mapSaved = (r) => ({
+  id: r.id,
+  city: r.city,
+  country: r.country,
+  region: r.region,
+  date: r.date?.toISOString().slice(0, 10),
 });
 
-app.get("/api/activity", async (_req,res)=>{
-  try{
-    const [trips, wish, saved] = await Promise.all([
-      pool.query(`select 'Trip' as type, title, destination as detail, created_at from trips`),
-      pool.query(`select 'Wishlist' as type, destination as title, coalesce(note,'') as detail, added_at as created_at from wishlist`),
-      pool.query(`select 'Saved' as type, destination_title as title, coalesce(destination_region,'') as detail, saved_at as created_at from saved_destinations`)
-    ]);
-    const all = [...trips.rows, ...wish.rows, ...saved.rows]
-      .sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
-    res.json(all);
-  }catch(e){ res.status(500).json({error:String(e)}); }
+// ----- Trips -----
+app.get("/api/trips", async (_req, res) => {
+  const { rows } = await pool.query(
+    "SELECT * FROM trips ORDER BY start_date DESC, title ASC"
+  );
+  res.json(rows.map(mapTripRow));
 });
 
-/* ======== WRITE ======== */
-app.post("/api/trips", async (req,res)=>{
-  try{
-    const { title, destination, start_date, end_date, budget } = req.body;
-    const q = await pool.query(
-      `insert into trips (title, destination, start_date, end_date, budget)
-       values ($1,$2,$3,$4,$5)
-       returning id, title, destination, start_date, end_date, budget, created_at`,
-      [title, destination, start_date, end_date, budget]
-    );
-    res.json(q.rows[0]);
-  }catch(e){ res.status(500).json({error:String(e)}); }
+app.post("/api/trips", async (req, res) => {
+  const { title, dest, start, end, budget } = req.body || {};
+  if (!title || !dest || !start || !end) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  const id = randomUUID();
+  const params = [id, title, dest, start, end, budget ?? null];
+  const { rows } = await pool.query(
+    `INSERT INTO trips (id, title, dest, start_date, end_date, budget)
+     VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+    params
+  );
+  res.status(201).json(mapTripRow(rows[0]));
 });
 
-app.post("/api/wishlist", async (req,res)=>{
-  try{
-    const { place, note } = req.body;
-    // tolerate missing 'note' column by trying; if it fails, try without note
-    try{
-      const q = await pool.query(
-        `insert into wishlist (destination, note)
-         values ($1,$2)
-         returning id, destination as place, coalesce(note,'') as note, added_at`,
-        [place, note]
-      );
-      return res.json(q.rows[0]);
-    }catch(inner){
-      // fallback if 'note' doesn't exist
-      const q2 = await pool.query(
-        `insert into wishlist (destination)
-         values ($1)
-         returning id, destination as place, '' as note, added_at`,
-        [place]
-      );
-      return res.json(q2.rows[0]);
-    }
-  }catch(e){ res.status(500).json({error:String(e)}); }
+app.delete("/api/trips/:id", async (req, res) => {
+  await pool.query("DELETE FROM trips WHERE id = $1", [req.params.id]);
+  res.status(204).end();
 });
+
+// ----- Wishlist -----
+app.get("/api/wishlist", async (_req, res) => {
+  const { rows } = await pool.query(
+    "SELECT * FROM wishlist ORDER BY date DESC NULLS LAST, place ASC NULLS LAST"
+  );
+  res.json(rows.map(mapWishRow));
+});
+
+app.post("/api/wishlist", async (req, res) => {
+  const { place, note } = req.body || {};
+  const id = randomUUID();
+  const d = new Date().toISOString().slice(0, 10);
+  const { rows } = await pool.query(
+    `INSERT INTO wishlist (id, place, note, date)
+     VALUES ($1,$2,$3,$4) RETURNING *`,
+    [id, place ?? null, note ?? null, d]
+  );
+  res.status(201).json(mapWishRow(rows[0]));
+});
+
+app.delete("/api/wishlist/:id", async (req, res) => {
+  await pool.query("DELETE FROM wishlist WHERE id = $1", [req.params.id]);
+  res.status(204).end();
+});
+
+// ----- Saved Destinations (kept, but Dashboard doesn’t depend on it) -----
+app.get("/api/saved", async (_req, res) => {
+  const { rows } = await pool.query(
+    "SELECT * FROM saved_destinations ORDER BY date DESC NULLS LAST, city ASC"
+  );
+  res.json(rows.map(mapSaved));
+});
+app.post("/api/saved", async (req, res) => {
+  const { city, country, region } = req.body || {};
+  if (!city || !country) return res.status(400).json({ error: "Missing city/country" });
+  const id = randomUUID();
+  const d = new Date().toISOString().slice(0, 10);
+  const { rows } = await pool.query(
+    `INSERT INTO saved_destinations (id, city, country, region, date)
+     VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+    [id, city, country, region ?? null, d]
+  );
+  res.status(201).json(mapSaved(rows[0]));
+});
+app.delete("/api/saved/:id", async (req, res) => {
+  await pool.query("DELETE FROM saved_destinations WHERE id = $1", [req.params.id]);
+  res.status(204).end();
+});
+
+// health (for quick check)
+app.get("/health", (_req, res) => res.json({ ok: true }));
 
 /* HTML fallbacks - serve pages from organized structure */
-app.get("/pages/flights.html", (_req,res)=>{
-  res.sendFile(path.join(__dirname,"..","public","pages","flights.html"));
+app.get("/pages/flights.html", (_req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "pages", "flights.html"));
 });
-app.get("/pages/personal_dashboard.html", (_req,res)=>{
-  res.sendFile(path.join(__dirname,"..","public","pages","personal_dashboard.html"));
+app.get("/pages/personal_dashboard.html", (_req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "pages", "personal_dashboard.html"));
 });
 
-// Boot
+// start
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, ()=> console.log(`✅ Server running at http://localhost:${PORT}`));
+ensureTables()
+  .then(() => app.listen(PORT, () => {
+    console.log(`✅ Server running → http://localhost:${PORT}`);
+  }))
+  .catch((e) => {
+    console.error("Failed to init DB:", e);
+    process.exit(1);
+  });
