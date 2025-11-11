@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Golden Twilight • Explore Destinations</title>
+
+  <!-- Tailwind (dev only) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            twilight: "#000814",
+            twilightMid: "#001D3D",
+            twilightSoft: "#003566",
+            gold: "#FFC300",
+            sand: "#F5F0E6",
+            mist: "#EEF3F8"
+          },
+          boxShadow: { glow: "0 10px 30px rgba(0,0,0,.25)" }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://images.unsplash.com">
+  <style>
+    .chip{padding:.5rem .85rem;border-radius:9999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);transition:all .2s}
+    .chip:hover{background:rgba(255,255,255,.18);cursor:pointer}
+    .chip.active{box-shadow:0 0 0 2px #FFC300 inset}
+    .pill{background:rgba(255,195,0,.18);color:#FFC300;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.875rem;font-weight:500}
+    .destination-card{background:linear-gradient(135deg, rgba(0,24,20,.4), rgba(0,53,102,.3));border:1px solid rgba(255,255,255,.1);border-radius:1rem;overflow:hidden;transition:all .3s}
+    .destination-card:hover{transform:translateY(-4px);background:linear-gradient(135deg, rgba(0,24,20,.6), rgba(0,53,102,.5))}
+    .rating{display:inline-flex;align-items:center;gap:0.25rem;background:rgba(255,195,0,.2);padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.875rem;color:#FFC300;font-weight:600}
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-twilight via-twilightSoft/70 to-sand/60 text-white">
+
+  <!-- Navigation -->
+  <nav class="sticky top-0 z-50 backdrop-blur-md bg-twilight/80 border-b border-white/5">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="/" class="font-bold text-xl tracking-wide text-gold">Golden Twilight</a>
+      <div class="hidden md:flex gap-8 items-center">
+        <a href="/pages/flights.html" class="text-white/70 hover:text-gold transition">Flights</a>
+        <a href="/pages/destinations.html" class="text-gold font-semibold">Destinations</a>
+        <a href="#" class="text-white/70 hover:text-gold transition">Tools</a>
+      </div>
+      <div class="flex gap-3">
+        <a href="/pages/personal_dashboard.html"
+           class="rounded-xl bg-gold text-black px-4 py-2 font-semibold shadow-md hover:brightness-95 transition">
+          Dashboard
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="max-w-7xl mx-auto px-6 py-12">
+    <div class="text-center mb-8">
+      <h1 class="text-5xl md:text-6xl font-extrabold mb-4 bg-gradient-to-r from-gold via-yellow-300 to-gold bg-clip-text text-transparent drop-shadow-lg">
+        Explore Destinations
+      </h1>
+      <p class="text-white/70 text-lg max-w-2xl mx-auto">
+        Discover the world's most captivating places. From pristine beaches to ancient cities, find your perfect escape.
+      </p>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 mb-8">
+      <div class="flex flex-col gap-4">
+        <input type="text" id="searchInput" placeholder="Search destinations..." 
+               class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:border-gold">
+        <div class="flex flex-wrap gap-2 justify-center" id="filterChips">
+          <div class="chip active" data-filter="all">🌍 All</div>
+          <div class="chip" data-filter="beach">🏖️ Beach</div>
+          <div class="chip" data-filter="mountain">🏔️ Mountains</div>
+          <div class="chip" data-filter="culture">🏛️ Culture</div>
+          <div class="chip" data-filter="food">🍜 Food</div>
+          <div class="chip" data-filter="adventure">🎒 Adventure</div>
+          <div class="chip" data-filter="city">🌆 City</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Destinations Grid -->
+  <section class="max-w-7xl mx-auto px-6 pb-16">
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="destinationsGrid">
+      <!-- Destinations will be dynamically loaded here -->
+    </div>
+
+    <!-- No Results Message -->
+    <div id="noResults" class="hidden text-center py-12">
+      <div class="text-6xl mb-4">🔍</div>
+      <h3 class="text-2xl font-bold mb-2">No destinations found</h3>
+      <p class="text-white/60">Try adjusting your search or filters</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/5 bg-twilight/50 py-12 mt-12">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid md:grid-cols-4 gap-8 mb-8">
+        <div>
+          <h4 class="font-bold text-gold mb-4">Golden Twilight</h4>
+          <p class="text-white/60 text-sm">
+            Transform travel chaos into confident adventures.
+          </p>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">Explore</h4>
+          <ul class="space-y-2 text-white/60 text-sm">
+            <li><a href="/pages/destinations.html" class="hover:text-gold transition">Destinations</a></li>
+            <li><a href="/pages/flights.html" class="hover:text-gold transition">Flights</a></li>
+            <li><a href="/pages/personal_dashboard.html" class="hover:text-gold transition">Dashboard</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">Support</h4>
+          <ul class="space-y-2 text-white/60 text-sm">
+            <li><a href="#" class="hover:text-gold transition">Help Center</a></li>
+            <li><a href="#" class="hover:text-gold transition">Contact Us</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-4">Connect</h4>
+          <ul class="space-y-2 text-white/60 text-sm">
+            <li><a href="#" class="hover:text-gold transition">Instagram</a></li>
+            <li><a href="#" class="hover:text-gold transition">Twitter</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-white/10 pt-8 text-center text-white/50 text-sm">
+        <p>© 2025 Golden Twilight. All Rights Reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../js/destinations.js"></script>
+</body>
+</html>

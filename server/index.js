@@ -168,6 +168,9 @@ app.get("/pages/flights.html", (_req, res) => {
 app.get("/pages/personal_dashboard.html", (_req, res) => {
   res.sendFile(path.join(__dirname, "..", "public", "pages", "personal_dashboard.html"));
 });
+app.get("/pages/destinations.html", (_req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "pages", "destinations.html"));
+});
 
 // start
 const PORT = process.env.PORT || 3000;
