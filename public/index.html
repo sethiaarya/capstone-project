@@ -36,6 +36,12 @@
     .destination-card{background:linear-gradient(135deg, rgba(0,24,20,.4), rgba(0,53,102,.3));border:1px solid rgba(255,255,255,.1);border-radius:1rem;overflow:hidden;transition:all .3s}
     .destination-card:hover{transform:translateY(-4px);background:linear-gradient(135deg, rgba(0,24,20,.6), rgba(0,53,102,.5))}
     .rating{display:inline-flex;align-items:center;gap:0.25rem;background:rgba(255,195,0,.2);padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.875rem;color:#FFC300;font-weight:600}
+    .modal{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,8,20,.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:1rem}
+    .modal.active{display:flex}
+    .modal-content{background:linear-gradient(135deg, rgba(0,29,61,.95), rgba(0,53,102,.95));border:1px solid rgba(255,255,255,.15);border-radius:1.5rem;max-width:900px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+    .modal-content::-webkit-scrollbar{width:8px}
+    .modal-content::-webkit-scrollbar-track{background:rgba(255,255,255,.05)}
+    .modal-content::-webkit-scrollbar-thumb{background:rgba(255,195,0,.3);border-radius:4px}
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-b from-twilight via-twilightSoft/70 to-sand/60 text-white">
@@ -69,27 +75,12 @@
     
     <!-- Hero CTA Buttons -->
     <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-      <a href="/pages/flights.html" class="bg-gold text-black px-8 py-3 rounded-lg font-semibold hover:brightness-95 transition shadow-lg">
+      <a href="/pages/destinations.html" class="bg-gold text-black px-8 py-3 rounded-lg font-semibold hover:brightness-95 transition shadow-lg">
         Explore Destinations
       </a>
       <button class="border border-gold text-gold px-8 py-3 rounded-lg font-semibold hover:bg-gold hover:text-black transition">
         Plan Your Trip
       </button>
-    </div>
-
-    <!-- Search & Filters -->
-    <div class="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 mb-12">
-      <div class="flex flex-col gap-4">
-        <input type="text" placeholder="Where do you want to go?" 
-               class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:border-gold">
-        <div class="flex flex-wrap gap-2 justify-center">
-          <div class="chip">🏖️ Beach</div>
-          <div class="chip">🏔️ Mountains</div>
-          <div class="chip">🏛️ Culture</div>
-          <div class="chip">🍜 Food</div>
-          <div class="chip">🎒 Adventure</div>
-        </div>
-      </div>
     </div>
 
     <!-- Stats -->
@@ -124,7 +115,7 @@
 
     <div class="grid md:grid-cols-3 gap-6">
       <!-- Santorini Card -->
-      <div class="destination-card">
+      <div class="destination-card cursor-pointer" onclick="openModal('santorini')">
         <div class="relative h-64 bg-gradient-to-br from-blue-500 to-pink-500 overflow-hidden">
           <img src="https://images.unsplash.com/photo-1602686082498-bc97cea3f832?w=500&h=400&fit=crop" 
                alt="Santorini" class="w-full h-full object-cover opacity-80">
@@ -150,7 +141,7 @@
       </div>
 
       <!-- Kyoto Card -->
-      <div class="destination-card">
+      <div class="destination-card cursor-pointer" onclick="openModal('kyoto')">
         <div class="relative h-64 bg-gradient-to-br from-green-600 to-blue-500 overflow-hidden">
           <img src="https://images.unsplash.com/photo-1725827786681-4929966a01dc?w=500&h=400&fit=crop" 
                alt="Kyoto" class="w-full h-full object-cover opacity-80">
@@ -176,7 +167,7 @@
       </div>
 
       <!-- Patagonia Card -->
-      <div class="destination-card">
+      <div class="destination-card cursor-pointer" onclick="openModal('patagonia')">
         <div class="relative h-64 bg-gradient-to-br from-gray-600 to-blue-600 overflow-hidden">
           <img src="https://images.unsplash.com/photo-1658815025103-447a4eb30847?w=500&h=400&fit=crop" 
                alt="Patagonia" class="w-full h-full object-cover opacity-80">
@@ -203,7 +194,7 @@
     </div>
 
     <div class="text-center mt-12">
-      <a href="/pages/flights.html" class="border border-gold text-gold px-8 py-3 rounded-lg font-semibold hover:bg-gold hover:text-black transition inline-block">
+      <a href="/pages/destinations.html" class="border border-gold text-gold px-8 py-3 rounded-lg font-semibold hover:bg-gold hover:text-black transition inline-block">
         View All Destinations
       </a>
     </div>
@@ -383,6 +374,186 @@
       </div>
     </div>
   </footer>
+
+  <!-- Modal -->
+  <div id="destinationModal" class="modal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div id="modalBody">
+        <!-- Content will be dynamically inserted -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const destinations = {
+      santorini: {
+        name: "Santorini",
+        country: "Greece",
+        image: "https://images.unsplash.com/photo-1602686082498-bc97cea3f832?w=900&h=600&fit=crop",
+        rating: 4.8,
+        bestTime: "April - October",
+        weather: "🌡️ Perfect Weather",
+        description: "Santorini is a stunning Greek island known for its dramatic views, stunning sunsets, and unique volcanic beaches. The island's iconic white-washed buildings with blue domes create a postcard-perfect scene.",
+        highlights: [
+          "Watch the world-famous sunset in Oia",
+          "Explore the ancient ruins of Akrotiri",
+          "Relax on the unique Red Beach and Black Beach",
+          "Wine tasting at traditional wineries",
+          "Visit the picturesque village of Fira"
+        ],
+        activities: ["Photography", "Wine Tours", "Beach Activities", "Historical Sites", "Boat Tours"],
+        budget: "$150-300 per day",
+        duration: "4-6 days recommended"
+      },
+      kyoto: {
+        name: "Kyoto",
+        country: "Japan",
+        image: "https://images.unsplash.com/photo-1725827786681-4929966a01dc?w=900&h=600&fit=crop",
+        rating: 4.9,
+        bestTime: "March - May, September - November",
+        weather: "🍂 Autumn Colors",
+        description: "Kyoto, once the capital of Japan, is a city steeped in history and tradition. With over 2,000 temples and shrines, stunning gardens, and traditional geisha districts, it's the cultural heart of Japan.",
+        highlights: [
+          "Visit the iconic Fushimi Inari Shrine with thousands of torii gates",
+          "Explore the Golden Pavilion (Kinkaku-ji)",
+          "Walk through the enchanting Arashiyama Bamboo Grove",
+          "Experience a traditional tea ceremony",
+          "Discover the historic Gion geisha district"
+        ],
+        activities: ["Temple Visits", "Cultural Experiences", "Traditional Cuisine", "Garden Tours", "Photography"],
+        budget: "$100-200 per day",
+        duration: "5-7 days recommended"
+      },
+      patagonia: {
+        name: "Patagonia",
+        country: "Chile & Argentina",
+        image: "https://images.unsplash.com/photo-1658815025103-447a4eb30847?w=900&h=600&fit=crop",
+        rating: 4.7,
+        bestTime: "December - March",
+        weather: "🏔️ Adventure Season",
+        description: "Patagonia is a vast wilderness region at the southern tip of South America, shared by Chile and Argentina. It offers some of the most spectacular and untouched landscapes on Earth, from glaciers to mountains to pristine lakes.",
+        highlights: [
+          "Trek the famous W Circuit in Torres del Paine",
+          "Visit the stunning Perito Moreno Glacier",
+          "Explore the majestic Fitz Roy mountain range",
+          "Kayak through glacial lakes",
+          "Spot wildlife including guanacos, condors, and pumas"
+        ],
+        activities: ["Trekking", "Glacier Tours", "Wildlife Watching", "Kayaking", "Camping"],
+        budget: "$80-150 per day",
+        duration: "7-14 days recommended"
+      }
+    };
+
+    function openModal(destId) {
+      const dest = destinations[destId];
+      const modal = document.getElementById('destinationModal');
+      const modalBody = document.getElementById('modalBody');
+      
+      modalBody.innerHTML = `
+        <div class="relative">
+          <!-- Close Button -->
+          <button onclick="closeModal()" class="absolute top-4 right-4 z-10 bg-twilight/80 hover:bg-twilight text-white rounded-full w-10 h-10 flex items-center justify-center transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+
+          <!-- Hero Image -->
+          <div class="relative h-96 overflow-hidden rounded-t-2xl">
+            <img src="${dest.image}" alt="${dest.name}" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-twilight/80 to-transparent"></div>
+            <div class="absolute bottom-6 left-6 right-6">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="pill">${dest.weather}</span>
+                <div class="rating text-base">${dest.rating}</div>
+              </div>
+              <h2 class="text-4xl font-bold mb-2">${dest.name}</h2>
+              <p class="text-white/80 text-lg">${dest.country}</p>
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="p-8">
+            <!-- Description -->
+            <div class="mb-8">
+              <h3 class="text-2xl font-bold mb-3">About</h3>
+              <p class="text-white/80 leading-relaxed">${dest.description}</p>
+            </div>
+
+            <!-- Quick Info -->
+            <div class="grid md:grid-cols-3 gap-4 mb-8">
+              <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                <div class="text-gold font-semibold mb-1">Best Time</div>
+                <div class="text-white/80">${dest.bestTime}</div>
+              </div>
+              <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                <div class="text-gold font-semibold mb-1">Budget</div>
+                <div class="text-white/80">${dest.budget}</div>
+              </div>
+              <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+                <div class="text-gold font-semibold mb-1">Duration</div>
+                <div class="text-white/80">${dest.duration}</div>
+              </div>
+            </div>
+
+            <!-- Highlights -->
+            <div class="mb-8">
+              <h3 class="text-2xl font-bold mb-4">Top Highlights</h3>
+              <ul class="space-y-3">
+                ${dest.highlights.map(h => `
+                  <li class="flex items-start gap-3">
+                    <span class="text-gold mt-1">✦</span>
+                    <span class="text-white/80">${h}</span>
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+
+            <!-- Activities -->
+            <div class="mb-8">
+              <h3 class="text-2xl font-bold mb-4">Activities</h3>
+              <div class="flex flex-wrap gap-2">
+                ${dest.activities.map(a => `
+                  <span class="px-4 py-2 bg-white/10 rounded-full text-sm border border-white/10 text-white/80">
+                    ${a}
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-4 pt-4">
+              <a href="/pages/flights.html" class="flex-1 bg-gold text-black px-6 py-3 rounded-lg font-semibold hover:brightness-95 transition text-center">
+                Book Flights
+              </a>
+              <a href="/pages/destinations.html" class="flex-1 border border-gold text-gold px-6 py-3 rounded-lg font-semibold hover:bg-gold hover:text-black transition text-center">
+                Explore More
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(event) {
+      if (!event || event.target.id === 'destinationModal') {
+        const modal = document.getElementById('destinationModal');
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      }
+    }
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+  </script>
 
 </body>
 </html>
