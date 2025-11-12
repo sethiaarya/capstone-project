@@ -55,7 +55,19 @@ async function ensureTables() {
     );
   `);
 
-  console.log("✅ Tables ready (trips, wishlist, saved_destinations)");
+    await pool.query(`
+    CREATE TABLE IF NOT EXISTS hotels (
+      id UUID PRIMARY KEY,
+      place TEXT NOT NULL,
+      note TEXT,
+      check_in DATE,
+      check_out DATE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  console.log("✅ Tables ready (trips, wishlist, saved_destinations, hotels)");
+
 }
 
 // ----- Mappers -----
@@ -79,6 +91,14 @@ const mapSaved = (r) => ({
   country: r.country,
   region: r.region,
   date: r.date?.toISOString().slice(0, 10),
+});
+const mapHotelRow = (r) => ({
+  id: r.id,
+  place: r.place,
+  note: r.note,
+  checkIn: r.check_in ? r.check_in.toISOString().slice(0, 10) : "",
+  checkOut: r.check_out ? r.check_out.toISOString().slice(0, 10) : "",
+  createdAt: r.created_at?.toISOString?.() ?? null,
 });
 
 // ----- Trips -----
@@ -133,6 +153,36 @@ app.delete("/api/wishlist/:id", async (req, res) => {
   await pool.query("DELETE FROM wishlist WHERE id = $1", [req.params.id]);
   res.status(204).end();
 });
+
+  // ----- Hotels -----
+app.get("/api/hotels", async (_req, res) => {
+  const { rows } = await pool.query(
+    "SELECT * FROM hotels ORDER BY created_at DESC, place ASC"
+  );
+  res.json(rows.map(mapHotelRow));
+});
+
+app.post("/api/hotels", async (req, res) => {
+  const { place, checkIn = null, checkOut = null, note = null } = req.body || {};
+  if (!place || !place.trim()) {
+    return res.status(400).json({ error: "place required" });
+  }
+  const id = randomUUID();
+  const params = [id, place.trim(), note, checkIn, checkOut];
+  const { rows } = await pool.query(
+    `INSERT INTO hotels (id, place, note, check_in, check_out)
+     VALUES ($1,$2,$3,$4,$5)
+     RETURNING *`,
+    params
+  );
+  res.status(201).json(mapHotelRow(rows[0]));
+});
+
+app.delete("/api/hotels/:id", async (req, res) => {
+  await pool.query("DELETE FROM hotels WHERE id = $1", [req.params.id]);
+  res.status(204).end();
+});
+
 
 // ----- Saved Destinations (kept, but Dashboard doesn’t depend on it) -----
 app.get("/api/saved", async (_req, res) => {
