@@ -580,50 +580,79 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-// === Simran: Load booked flights from localStorage and show on dashboard ===
-document.addEventListener("DOMContentLoaded", () => {
+// === Simran: Load booked flights from backend (Neon) and show on dashboard ===
+document.addEventListener("DOMContentLoaded", async () => {
   const container = document.getElementById("flights-list");
-  if (!container) return; // if section not on this page, do nothing
+  if (!container) return;
 
-  const bookings = JSON.parse(localStorage.getItem("bookedFlights") || "[]");
+  try {
+    const res = await fetch("/api/bookings");
+    if (!res.ok) {
+      throw new Error("Server returned " + res.status);
+    }
 
-  if (!bookings || bookings.length === 0) {
+    const bookings = await res.json();
+
+    if (!bookings || bookings.length === 0) {
+      container.innerHTML = `
+        <div class="bg-white rounded-xl p-4 shadow text-sm text-slate-600">
+          No flights booked yet.
+          Go to <a href="flights.html" class="text-blue-600 underline">Flights</a> to add one.
+        </div>
+      `;
+      return;
+    }
+
+    bookings.forEach((b) => {
+      const div = document.createElement("div");
+      div.className = "bg-white rounded-xl p-4 shadow flex flex-col gap-1";
+
+      const dateText = b.flight_date
+        ? new Date(b.flight_date).toISOString().split("T")[0]
+        : "Flexible date";
+
+      const createdText = b.created_at
+        ? new Date(b.created_at).toLocaleString()
+        : "";
+
+      div.innerHTML = `
+        <div class="flex justify-between gap-4">
+          <div>
+            <div class="font-semibold text-slate-900">
+              ${b.from_city} → ${b.to_city}
+            </div>
+            <div class="text-[12px] text-slate-600">
+              ${dateText} • ${b.airline || "Airline"} ${b.duration ? "• " + b.duration : ""}
+            </div>
+            <div class="text-[12px] text-slate-600">
+              Passengers: ${b.passengers}
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-[13px] font-semibold text-emerald-600">
+              Total: $${b.total}
+            </div>
+            ${
+              createdText
+                ? `<div class="text-[11px] text-slate-400 mt-1">
+                     Booked: ${createdText}
+                   </div>`
+                : ""
+            }
+          </div>
+        </div>
+      `;
+
+      container.appendChild(div);
+    });
+  } catch (err) {
+    console.error("Error loading bookings:", err);
     container.innerHTML = `
-      <div class="bg-white rounded-xl p-4 shadow text-sm text-slate-600">
-        No flights booked yet.
-        Go to <a href="flights.html" class="text-blue-600 underline">Flights</a> to add one.
+      <div class="bg-white rounded-xl p-4 shadow text-sm text-red-600">
+        Could not load your flights from the server.
       </div>
     `;
-    return;
   }
-
-  bookings.forEach((b) => {
-    const div = document.createElement("div");
-    div.className = "bg-white rounded-xl p-4 shadow flex flex-col gap-1";
-
-    div.innerHTML = `
-      <div class="flex justify-between gap-4">
-        <div>
-          <div class="font-semibold text-slate-900">
-            ${b.from} → ${b.to}
-          </div>
-          <div class="text-[12px] text-slate-600">
-            ${b.date || "Flexible date"} • ${b.airline || "Airline"} • ${b.duration || ""}
-          </div>
-          <div class="text-[12px] text-slate-600">
-            Passengers: ${b.passengers}
-          </div>
-        </div>
-        <div class="text-right">
-          <div class="text-[13px] font-semibold text-emerald-600">
-            Total: $${b.total}
-          </div>
-        </div>
-      </div>
-    `;
-
-    container.appendChild(div);
-  });
 });
 // === END Simran section ===
 });
