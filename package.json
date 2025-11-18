@@ -4,7 +4,8 @@
   "description": "Travel Portal Web App with Trips & Wishlist Dashboard",
   "main": "server/index.js",
   "scripts": {
-    "start": "node server/index.js"
+    "start": "node server/index.js",
+    "test": "mocha \"tests/**/*.selenium.test.js\""
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -23,5 +24,11 @@
   "bugs": {
     "url": "https://github.com/sethiaarya/capstone-project/issues"
   },
-  "homepage": "https://github.com/sethiaarya/capstone-project#readme"
+  "homepage": "https://github.com/sethiaarya/capstone-project#readme",
+  "devDependencies": {
+    "chromedriver": "^142.0.3",
+    "mocha": "^11.7.5",
+    "selenium-webdriver": "^4.38.0"
+  }
+  
 }
