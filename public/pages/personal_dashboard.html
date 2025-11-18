@@ -34,23 +34,16 @@
     .section-title{ color:var(--ink); font-weight:700; font-size:1.05rem; letter-spacing:.2px; }
     .subtitle{ color:#cfe1f7; }
 
-    /* ===== overlap + form-grid hotfix (minimal, visual-safe) ===== */
-    main { margin-top: 1.5rem !important; }      /* stop any collision with hero */
-    main .grid { align-items: start; }           /* columns pack from top */
-    section, aside { min-width: 0; }             /* grid children can shrink */
-    .card { position: relative; z-index: 0; }    /* natural stacking */
+    /* layout hotfixes */
+    main { margin-top: 1.5rem !important; }
+    main .grid { align-items: start; }
+    section, aside { min-width: 0; }
+    .card { position: relative; z-index: 0; }
 
-    /* Wishlist form stays on one row inside the card */
-    #wishForm {
-      display: grid;
-      grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto !important;
-      gap: 0.625rem;
-    }
-    #wishForm .input { min-width: 0; }
-    #wishForm .btn { width: 64px; justify-content: center; }
-
-    /* Trip form fields also shrink properly */
-    #tripForm .input { min-width: 0; }
+    #wishForm { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; gap:.625rem; }
+    #wishForm .input { min-width:0; }
+    #wishForm .btn { width:64px; justify-content:center; }
+    #tripForm .input { min-width:0; }
   </style>
 </head>
 
@@ -78,42 +71,42 @@
           <h1 class="text-white text-[32px] sm:text-[36px] font-extrabold tracking-tight">Your Dashboard</h1>
           <p class="subtitle mt-1 text-[15px]">Plan smarter. Track faster. <span class="text-brand-gold font-semibold">Save beautifully.</span></p>
         </div>
-        <div class="hidden sm:flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-white/15 border border-white/20"></div>
-          <div class="text-white/90">
-            <div class="text-[12px] opacity-80">Status</div>
-            <div class="text-[14px] font-semibold">Traveler</div>
+
+        <!-- Auth controls (IDs used by dashboard.js) -->
+        <div class="flex items-center gap-4">
+          <div id="avatarCircle" class="w-12 h-12 rounded-full border border-white/20"></div>
+          <div class="flex items-center gap-3">
+            <div class="text-sm">
+              <div class="text-white/70">Status</div>
+              <div id="statusLabel" class="text-white font-semibold">Guest</div>
+            </div>
+            <span id="navUserName" class="hidden text-white text-lg font-semibold"></span>
+            <button id="logoutBtn" class="hidden px-4 py-2 rounded bg-white/10 text-white hover:bg-white/20">Sign out</button>
+            <button id="openAuth" class="px-4 py-2 rounded bg-[#f2b800] text-black font-semibold">Sign in / Create profile</button>
           </div>
         </div>
       </div>
 
-     <!-- KPIs -->
-<div class="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
-  <div class="kpi px-4 py-3">
-    <div class="text-[12px] text-[color:var(--muted)]">Trips Planned</div>
-    <div class="flex items-baseline gap-2">
-      <span id="kpiTrips" class="text-[26px] font-extrabold text-[color:var(--ink)]">0</span>
+      <!-- KPIs -->
+      <div class="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="kpi px-4 py-3">
+          <div class="text-[12px] text-[color:var(--muted)]">Trips Planned</div>
+          <div class="flex items-baseline gap-2"><span id="kpiTrips" class="text-[26px] font-extrabold text-[color:var(--ink)]">0</span></div>
+        </div>
+        <div class="kpi px-4 py-3">
+          <div class="text-[12px] text-[color:var(--muted)]">Hotels Saved</div>
+          <div class="flex items-baseline gap-2"><span id="kpiHotels" class="text-[26px] font-extrabold text-[color:var(--ink)]">0</span></div>
+        </div>
+        <div class="kpi px-4 py-3">
+          <div class="text-[12px] text-[color:var(--muted)]">Wishlist Places</div>
+          <div class="flex items-baseline gap-2"><span id="kpiWishlist" class="text-[26px] font-extrabold text-[color:var(--ink)]">0</span></div>
+        </div>
+        <div class="kpi px-4 py-3">
+          <div class="text-[12px] text-[color:var(--muted)]">Last Added</div>
+          <div class="flex items-baseline gap-2"><span id="kpiActivity" class="text-[26px] font-extrabold text-[color:var(--ink)]">—</span></div>
+        </div>
+      </div>
     </div>
-  </div>
-  <div class="kpi px-4 py-3">
-    <div class="text-[12px] text-[color:var(--muted)]">Hotels Saved</div>
-    <div class="flex items-baseline gap-2">
-      <span id="kpiHotels" class="text-[26px] font-extrabold text-[color:var(--ink)]">0</span>
-    </div>
-  </div>
-  <div class="kpi px-4 py-3">
-    <div class="text-[12px] text-[color:var(--muted)]">Wishlist Places</div>
-    <div class="flex items-baseline gap-2">
-      <span id="kpiWishlist" class="text-[26px] font-extrabold text-[color:var(--ink)]">0</span>
-    </div>
-  </div>
-  <div class="kpi px-4 py-3">
-    <div class="text-[12px] text-[color:var(--muted)]">Last Added</div>
-    <div class="flex items-baseline gap-2">
-      <span id="kpiActivity" class="text-[26px] font-extrabold text-[color:var(--ink)]">—</span>
-    </div>
-  </div>
-</div>
   </section>
 
   <!-- MAIN -->
@@ -142,23 +135,43 @@
           </div>
         </div>
 
-         <!-- Hotels -->
-<div class="border rounded-2xl p-0 shadow-sm">
-  <div class="flex items-center justify-between px-4 py-3 border-b">
-    <h3 class="font-semibold">Hotels <span id="kpiHotels" class="ml-1 text-[13px] text-[color:var(--muted)]">0</span></h3>
-    <a id="hotelDealsBtn" class="btn btn-light btn-sm" href="https://www.google.com/travel/hotels" target="_blank" rel="noopener">Find Hotels</a>
+        <!-- Hotels -->
+        <div class="border rounded-2xl p-0 shadow-sm">
+          <div class="flex items-center justify-between px-4 py-3 border-b">
+            <h3 class="font-semibold">Hotels
+              <!-- NOTE: don't reuse kpiHotels ID; use a unique inline indicator if desired -->
+              <span id="kpiHotelsInline" class="ml-1 text-[13px] text-[color:var(--muted)]">0</span>
+            </h3>
+            <a id="hotelDealsBtn" class="btn btn-light btn-sm" href="https://www.google.com/travel/hotels" target="_blank" rel="noopener">Find Hotels</a>
+          </div>
+
+          <form id="hotelForm" class="p-4 grid grid-cols-2 gap-2">
+            <input id="hotelPlace" class="input col-span-2" placeholder="Place / hotel name" />
+            <input id="hotelCheckIn" type="date" class="input" />
+            <input id="hotelCheckOut" type="date" class="input" />
+            <input id="hotelNote" class="input col-span-2" placeholder="Note (optional)" />
+            <button type="submit" class="btn btn-navy col-span-2">Add</button>
+          </form>
+
+          <div id="hotelsList" class="p-4 pt-0 space-y-2"></div>
+        </div>
+
+
+    <!-- === Simran: My Flights section (from backend) === -->
+<section class="mt-8">
+  <h2 class="text-xl font-semibold text-slate-800 mb-3">
+    My Booked Flights
+  </h2>
+
+  <p class="text-sm text-slate-500 mb-4">
+    These are the flights you selected from the Flights page.
+  </p>
+
+  <div id="flights-list" class="flex flex-col gap-3 text-sm">
+    <!-- Booking cards will appear here -->
   </div>
-
-  <form id="hotelForm" class="p-4 grid grid-cols-2 gap-2">
-    <input id="hotelPlace" class="input col-span-2" placeholder="Place / hotel name" />
-    <input id="hotelCheckIn" type="date" class="input" />
-    <input id="hotelCheckOut" type="date" class="input" />
-    <input id="hotelNote" class="input col-span-2" placeholder="Note (optional)" />
-    <button type="submit" class="btn btn-navy col-span-2">Add</button>
-  </form>
-
-  <div id="hotelsList" class="p-4 pt-0 space-y-2"></div>
-</div>
+</section>
+<!-- === END Simran section === -->
 
         <!-- Recent Activity -->
         <div class="card p-4 shadow-card">
@@ -184,7 +197,6 @@
           </div>
         </div>
 
-
         <!-- Wishlist -->
         <div class="card p-4 shadow-card">
           <h2 class="section-title mb-3">Wishlist</h2>
@@ -197,8 +209,6 @@
             <div class="border border-[color:var(--line)] rounded-xl p-3 text-[color:var(--muted)]">No wishlist items yet.</div>
           </div>
         </div>
-
-
       </aside>
     </div>
   </main>
@@ -231,8 +241,42 @@
         </ul>
       </div>
     </div>
+
   </footer>
 
+  <!-- Auth Modal (IDs match dashboard.js) -->
+  <div id="authModal" class="fixed inset-0 hidden items-center justify-center bg-black/50 z-50">
+    <div class="w-[520px] max-w-[92vw] rounded-2xl bg-white p-6 shadow-xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-semibold">Welcome</h3>
+        <button id="closeAuth" class="px-3 py-1 rounded bg-gray-100">Close</button>
+      </div>
+
+      <p class="text-sm text-gray-600 mb-4">
+        Create your profile or sign in to sync your dashboard.
+      </p>
+
+      <!-- Create Profile -->
+      <form id="regForm" class="space-y-3">
+        <input id="regName"  type="text"     class="input w-full" placeholder="Full name" />
+        <input id="regEmail" type="email"    class="input w-full" placeholder="Email" />
+        <input id="regPass"  type="password" class="input w-full" placeholder="Password" />
+        <button class="btn btn-navy w-full">Create & Continue</button>
+      </form>
+
+      <div class="my-4 text-center text-sm text-gray-500">or</div>
+
+      <!-- Sign In -->
+      <form id="loginForm" class="space-y-3">
+        <input id="loginEmail" type="email"    class="input w-full" placeholder="Email" />
+        <input id="loginPass"  type="password" class="input w-full" placeholder="Password" />
+        <button class="btn btn-gold w-full">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- Include your dashboard script ONCE -->
   <script src="../js/dashboard.js" defer></script>
 </body>
 </html>

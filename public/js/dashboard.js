@@ -1,48 +1,48 @@
-/* Golden Twilight • Dashboard (SAFE RENDER VERSION)
-   - No innerHTML string templates (prevents layout corruption).
-   - Pure DOM node creation & event delegation.
-   - Trips + Wishlist + Hotels (safe render).
+/* Golden Twilight • Dashboard (Auth-fixed + 2b/2c UX)
+   - credentials:"same-origin" so session cookie sticks
+   - IDs match personal_dashboard.html (regForm/loginForm + regName/regEmail/regPass)
+   - Inline auth status + disabled buttons while pending (2b)
+   - Modal closes on Esc & backdrop click (2c)
 */
 
 const $ = (sel) => document.querySelector(sel);
 
-/* ------------------ tiny utils ------------------ */
+/* ------------------ core helpers ------------------ */
 async function req(url, opts = {}) {
   const r = await fetch(url, {
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     ...opts,
   });
   let body = null;
   try { body = await r.json(); } catch (_) {}
-  if (!r.ok) throw new Error(`HTTP ${r.status}: ${JSON.stringify(body || {})}`);
+  if (!r.ok) throw new Error(body?.error || `HTTP ${r.status}`);
   return body;
 }
 const text = (v) => (v == null ? "" : String(v));
 
-
+/* ------------------ activity / KPI ------------------ */
 function formatTimestamp(date) {
   const d = new Date(date);
   const now = new Date();
-  
+  const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+
   const isToday =
     d.getFullYear() === now.getFullYear() &&
     d.getMonth() === now.getMonth() &&
     d.getDate() === now.getDate();
-  
-  const isYesterday =
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate() - 1;
 
-  const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const isYesterday =
+    d.getFullYear() === y.getFullYear() &&
+    d.getMonth() === y.getMonth() &&
+    d.getDate() === y.getDate();
 
   if (isToday) return `Today ${time}`;
   if (isYesterday) return `Yesterday ${time}`;
   return d.toLocaleDateString([], { month: "short", day: "numeric" }) + ` ${time}`;
 }
 
-
-/* KPI helper for "Last Added" */
 const kpiActivity = $("#kpiActivity");
 function updateLastActivity() {
   if (!kpiActivity) return;
@@ -57,15 +57,42 @@ function addActivity(msg) {
   row.className = "border border-[color:var(--line)] rounded-xl p-3";
   row.textContent = msg;
   box.prepend(row);
-
-  // ✅ Update KPI "Last Added"
-  const k = $("#kpiActivity");
-  if (k) k.textContent = formatTimestamp(new Date());
+  if (kpiActivity) kpiActivity.textContent = formatTimestamp(new Date());
 }
 
-
+/* ------------------ misc util ------------------ */
 function clearNode(node) {
   while (node && node.firstChild) node.removeChild(node.firstChild);
+}
+
+/* ===== 2b: tiny status helpers for the auth forms ===== */
+function ensureFormStatusEl(form) {
+  let el = form.querySelector('[data-form-status]');
+  if (!el) {
+    el = document.createElement("div");
+    el.setAttribute("data-form-status", "1");
+    el.className = "text-sm mt-2";
+    form.appendChild(el);
+  }
+  return el;
+}
+function setFormStatus(form, msg, kind = "info") {
+  const el = ensureFormStatusEl(form);
+  el.textContent = msg || "";
+  el.className = "text-sm mt-2 " + (
+    kind === "error" ? "text-red-600" :
+    kind === "success" ? "text-emerald-600" :
+    "text-gray-600"
+  );
+}
+function withPending(btn, pendingText, fn) {
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = pendingText;
+  return fn().finally(() => {
+    btn.disabled = false;
+    btn.textContent = orig;
+  });
 }
 
 /* ------------------ Trips ------------------ */
@@ -238,9 +265,10 @@ wishForm?.addEventListener("submit", async (e) => {
   addActivity(`Added to wishlist: ${place}`);
 });
 
-/* ------------------ Hotels ------------------ */
+/* ------------------ Hotels (unchanged functionally) ------------------ */
 const hotelsList   = $("#hotelsList");
 const kpiHotels    = $("#kpiHotels");
+const kpiHotelsInline = $("#kpiHotelsInline");
 const hotelForm    = $("#hotelForm");
 const hotelPlace   = $("#hotelPlace");
 const hotelCheckIn = $("#hotelCheckIn");
@@ -252,17 +280,14 @@ function hotelLinks(place, checkIn, checkOut) {
   const ci = checkIn ? encodeURIComponent(checkIn) : null;
   const co = checkOut ? encodeURIComponent(checkOut) : null;
 
-  // Google Hotels (dates optional)
-  let google = `https://www.google.com/travel/hotels?q=${p}`;
-  if (ci) google += `&checkin=${ci}`;
-  if (co) google += `&checkout=${co}`;
+  let google  = `https://www.google.com/travel/hotels?q=${p}`;
+  if (ci) google  += `&checkin=${ci}`;
+  if (co) google  += `&checkout=${co}`;
 
-  // Booking.com
   let booking = `https://www.booking.com/searchresults.html?ss=${p}`;
   if (ci) booking += `&checkin=${ci}`;
   if (co) booking += `&checkout=${co}`;
 
-  // Expedia
   let expedia = `https://www.expedia.com/Hotel-Search?destination=${p}`;
   if (ci) expedia += `&checkIn=${ci}`;
   if (co) expedia += `&checkOut=${co}`;
@@ -275,12 +300,10 @@ function mapsEmbedUrl(place) {
   return `https://www.google.com/maps?q=${q}&output=embed`;
 }
 
-/* text-only, elegant hotel card (no photo) */
 function hotelCard(h) {
   const card = document.createElement("div");
   card.className = "rounded-2xl border border-[var(--line)] bg-white p-4 space-y-2";
 
-  // Title + dates
   const title = document.createElement("div");
   title.className = "text-lg font-semibold text-[var(--navy)]";
   title.textContent = h.place || "—";
@@ -291,7 +314,6 @@ function hotelCard(h) {
   dates.textContent = `${h.checkIn || "—"} → ${h.checkOut || "—"}`;
   card.appendChild(dates);
 
-  // Note
   if (h.note) {
     const note = document.createElement("div");
     note.className = "text-[13px] text-[var(--muted)]";
@@ -299,7 +321,6 @@ function hotelCard(h) {
     card.appendChild(note);
   }
 
-  // Row: left = pills, right = Remove
   const row = document.createElement("div");
   row.className = "flex items-center justify-between gap-2 pt-1 flex-wrap";
   card.appendChild(row);
@@ -309,17 +330,13 @@ function hotelCard(h) {
   row.appendChild(left);
 
   const { google, booking, expedia } = hotelLinks(h.place, h.checkIn, h.checkOut);
-
   const mk = (href, label) => {
     const a = document.createElement("a");
-    a.href = href;
-    a.target = "_blank";
-    a.rel = "noopener";
+    a.href = href; a.target = "_blank"; a.rel = "noopener";
     a.textContent = label;
     a.className = "px-3 py-1.5 rounded-full border border-[var(--line)] text-[13px] hover:bg-black/5 transition";
     return a;
   };
-
   left.appendChild(mk(google, "Google"));
   left.appendChild(mk(booking, "Booking"));
   left.appendChild(mk(expedia, "Expedia"));
@@ -330,7 +347,6 @@ function hotelCard(h) {
   mapBtn.className = "px-3 py-1.5 rounded-full border border-[var(--line)] text-[13px] hover:bg-black/5 transition";
   left.appendChild(mapBtn);
 
-  // RIGHT: Remove pill — same style as Trips
   const removeBtn = document.createElement("button");
   removeBtn.type = "button";
   removeBtn.className = "remove-hotel btn btn-navy text-[13px]";
@@ -338,7 +354,6 @@ function hotelCard(h) {
   removeBtn.textContent = "Remove";
   row.appendChild(removeBtn);
 
-  // Collapsible map
   const mapWrap = document.createElement("div");
   mapWrap.className = "pt-3 hidden";
   const iframe = document.createElement("iframe");
@@ -368,6 +383,7 @@ function hotelCard(h) {
 async function loadHotels() {
   const items = await req("/api/hotels");
   if (kpiHotels) kpiHotels.textContent = items.length;
+  if (kpiHotelsInline) kpiHotelsInline.textContent = items.length;
 
   clearNode(hotelsList);
   if (!items.length) {
@@ -380,27 +396,153 @@ async function loadHotels() {
   for (const h of items) hotelsList.appendChild(hotelCard(h));
 }
 
-/* ------------------ init ------------------ */
+/* ------------------ AUTH (single, clean) ------------------ */
+function setUserUI(me) {
+  const statusLabel = document.querySelector("#statusLabel");
+  const navUserName = document.querySelector("#navUserName");
+  const openBtn     = document.querySelector("#openAuth");
+  const logoutBtn   = document.querySelector("#logoutBtn");
+  const modal       = document.querySelector("#authModal");
+
+  if (me) {
+    statusLabel && (statusLabel.textContent = "Signed in");
+    if (navUserName) {
+      navUserName.textContent = me.fullName || me.email || "You";
+      navUserName.classList.remove("hidden");
+    }
+    openBtn?.classList.add("hidden");
+    logoutBtn?.classList.remove("hidden");
+    // close modal if open
+    modal?.classList.add("hidden");
+    modal?.classList.remove("flex");
+  } else {
+    statusLabel && (statusLabel.textContent = "Guest");
+    if (navUserName) { navUserName.textContent = ""; navUserName.classList.add("hidden"); }
+    openBtn?.classList.remove("hidden");
+    logoutBtn?.classList.add("hidden");
+  }
+}
+
+async function refreshMe() {
+  try {
+    const me = await req("/api/auth/me"); // {id,email,fullName,avatarUrl} or null
+    setUserUI(me);
+    return me;
+  } catch (e) {
+    console.error("refreshMe failed:", e);
+    setUserUI(null);
+    return null;
+  }
+}
+
+function initAuthUI() {
+  const modal     = document.querySelector("#authModal");
+  const openAuth  = document.querySelector("#openAuth");
+  const closeAuth = document.querySelector("#closeAuth");
+  const regForm   = document.querySelector("#regForm");
+  const loginForm = document.querySelector("#loginForm");
+  const logoutBtn = document.querySelector("#logoutBtn");
+
+  // Open modal
+  openAuth?.addEventListener("click", () => {
+    modal?.classList.remove("hidden");
+    modal?.classList.add("flex");
+  });
+
+  // ===== 2c: close modal on backdrop click & Esc =====
+  modal?.addEventListener("click", (e) => {
+    if (e.target === modal) { // clicked the overlay outside the card
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !modal?.classList.contains("hidden")) {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+  });
+  closeAuth?.addEventListener("click", () => {
+    modal?.classList.add("hidden");
+    modal?.classList.remove("flex");
+  });
+
+  // Register
+  regForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fullName = $("#regName")?.value.trim();
+    const email    = $("#regEmail")?.value.trim();
+    const password = $("#regPass")?.value;
+    if (!fullName || !email || !password) {
+      setFormStatus(regForm, "Please fill full name, email, and password.", "error");
+      return;
+    }
+    const submitBtn = regForm.querySelector("button[type='submit'], .btn");
+    await withPending(submitBtn, "Creating…", async () => {
+      try {
+        await req("/api/auth/register", {
+          method: "POST",
+          body: JSON.stringify({ fullName, email, password }),
+        });
+        setFormStatus(regForm, "Profile created!", "success");
+        addActivity(`Profile created: ${fullName}`);
+        await refreshMe();
+      } catch (err) {
+        setFormStatus(regForm, err.message || "Registration failed", "error");
+      }
+    });
+  });
+
+  // Login
+  loginForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email    = $("#loginEmail")?.value.trim();
+    const password = $("#loginPass")?.value;
+    if (!email || !password) {
+      setFormStatus(loginForm, "Email and password required.", "error");
+      return;
+    }
+    const submitBtn = loginForm.querySelector("button[type='submit'], .btn");
+    await withPending(submitBtn, "Signing in…", async () => {
+      try {
+        await req("/api/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        });
+        setFormStatus(loginForm, "Signed in!", "success");
+        addActivity("Signed in");
+        await refreshMe();
+      } catch (err) {
+        setFormStatus(loginForm, err.message || "Sign in failed", "error");
+      }
+    });
+  });
+
+  // Logout
+  logoutBtn?.addEventListener("click", async () => {
+    try {
+      await req("/api/auth/logout", { method: "POST", body: "{}" });
+      addActivity("Signed out");
+      await refreshMe();
+    } catch (e) {
+      alert(e.message || "Sign out failed");
+    }
+  });
+
+  // Initial state
+  refreshMe();
+}
+
+/* ------------------ boot ------------------ */
 document.addEventListener("DOMContentLoaded", () => {
   if (tripsList) loadTrips();
   if (wishlistList) loadWishlist();
+  if (hotelsList) loadHotels();
 
-  // initial Last Added KPI state
   updateLastActivity();
+  initAuthUI();
 
-  // Bind Hotels after DOM exists
-  const hotelsListEl   = document.querySelector("#hotelsList");
-  const hotelFormEl    = document.querySelector("#hotelForm");
-  const hotelPlaceEl   = document.querySelector("#hotelPlace");
-  const hotelCheckInEl = document.querySelector("#hotelCheckIn");
-  const hotelCheckOutEl= document.querySelector("#hotelCheckOut");
-  const hotelNoteEl    = document.querySelector("#hotelNote");
-
-  if (hotelsListEl) {
-    loadHotels();
-  }
-
-  // Global delegated handler for removing hotels (bulletproof)
+  // Global handler for removing hotels
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".remove-hotel");
     if (!btn) return;
@@ -411,33 +553,77 @@ document.addEventListener("DOMContentLoaded", () => {
       await loadHotels();
       addActivity("Hotel removed");
     } catch (err) {
-      console.error("Failed to remove hotel:", err);
       alert("Could not remove hotel: " + err.message);
     }
   });
 
-  if (hotelFormEl) {
-    hotelFormEl.addEventListener("submit", async (e) => {
+  // Hotel submit
+  if (hotelForm) {
+    hotelForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const place   = hotelPlaceEl?.value.trim();
-      const checkIn = hotelCheckInEl?.value.trim();
-      const checkOut= hotelCheckOutEl?.value.trim();
-      const note    = hotelNoteEl?.value.trim() || null;
-
+      const place   = hotelPlace?.value.trim();
+      const checkIn = hotelCheckIn?.value.trim();
+      const checkOut= hotelCheckOut?.value.trim();
+      const note    = hotelNote?.value.trim() || null;
       if (!place) return;
-
       try {
         await req("/api/hotels", {
           method: "POST",
           body: JSON.stringify({ place, checkIn, checkOut, note }),
         });
-        hotelFormEl.reset();
+        hotelForm.reset();
         await loadHotels();
         addActivity(`Hotel added: ${place}`);
       } catch (err) {
-        console.error("Hotel add failed:", err);
         alert("Could not add hotel: " + err.message);
       }
     });
   }
+
+// === Simran: Load booked flights from localStorage and show on dashboard ===
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("flights-list");
+  if (!container) return; // if section not on this page, do nothing
+
+  const bookings = JSON.parse(localStorage.getItem("bookedFlights") || "[]");
+
+  if (!bookings || bookings.length === 0) {
+    container.innerHTML = `
+      <div class="bg-white rounded-xl p-4 shadow text-sm text-slate-600">
+        No flights booked yet.
+        Go to <a href="flights.html" class="text-blue-600 underline">Flights</a> to add one.
+      </div>
+    `;
+    return;
+  }
+
+  bookings.forEach((b) => {
+    const div = document.createElement("div");
+    div.className = "bg-white rounded-xl p-4 shadow flex flex-col gap-1";
+
+    div.innerHTML = `
+      <div class="flex justify-between gap-4">
+        <div>
+          <div class="font-semibold text-slate-900">
+            ${b.from} → ${b.to}
+          </div>
+          <div class="text-[12px] text-slate-600">
+            ${b.date || "Flexible date"} • ${b.airline || "Airline"} • ${b.duration || ""}
+          </div>
+          <div class="text-[12px] text-slate-600">
+            Passengers: ${b.passengers}
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="text-[13px] font-semibold text-emerald-600">
+            Total: $${b.total}
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(div);
+  });
+});
+// === END Simran section ===
 });
