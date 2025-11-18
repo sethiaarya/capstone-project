@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,7 +44,7 @@
   <div class="flex items-center justify-between px-6 pt-4 text-white">
     <div class="font-semibold">Golden Twilight</div>
     <div class="flex items-center gap-4">
-      <a href="homepage.html" class="text-white/80 hover:text-gold">Explore</a>
+      <a href="index.html" class="text-white/80 hover:text-gold">Explore</a>
       <a href="flights.html" class="text-gold font-semibold">Flights</a>
       <a href="personal_dashboard.html"
          class="bg-gold text-black font-semibold px-4 py-2 rounded-lg shadow hover:brightness-95">
@@ -154,81 +155,88 @@
 
   <!-- Logic -->
   <script>
-    // === Simran: Flights search + select + save ===
+    // ---------- Cities & Airlines ----------
+    const CITY_CODES = [
+      "New York (JFK)", "Los Angeles (LAX)", "Chicago (ORD)", "Dallas (DFW)",
+      "Miami (MIA)", "San Francisco (SFO)", "Seattle (SEA)", "Atlanta (ATL)",
+      "Boston (BOS)", "Washington (IAD)", "Denver (DEN)", "Houston (IAH)",
+      "London (LHR)", "Paris (CDG)", "Amsterdam (AMS)", "Frankfurt (FRA)",
+      "Madrid (MAD)", "Rome (FCO)"
+    ];
 
-  function randomPrice() {
-    return (200 + Math.random() * 300).toFixed(2); // 200–500
-  }
+    const AIRLINES = [
+      "SkyWings", "AirLink", "GlobalJet", "Sunrise Air", "PacificAir", "EuroConnect", "NipponSky"
+    ];
 
-  function randomDuration() {
-    const hours = 2 + Math.floor(Math.random() * 11);
-    const mins = [0, 15, 30, 45][Math.floor(Math.random() * 4)];
-    return `${hours}h ${String(mins).padStart(2, "0")}m`;
-  }
+    // Populate datalist
+    const cityList = document.getElementById("cityList");
+    CITY_CODES.forEach(city => {
+      const option = document.createElement("option");
+      option.value = city;
+      cityList.appendChild(option);
+    });
 
-  function randomDateWithin60Days() {
-    const now = new Date();
-    const offset = Math.floor(Math.random() * 60);
-    const d = new Date(now);
-    d.setDate(now.getDate() + offset);
-    return d.toISOString().split("T")[0]; // YYYY-MM-DD
-  }
+    // --- Helpers ---
+    function generateRandomDates(count) {
+      const dates = [];
+      const today = new Date();
+      for (let i = 0; i < count; i++) {
+        const offset = Math.floor(Math.random() * 60); // within next 60 days
+        const futureDate = new Date(today);
+        futureDate.setDate(today.getDate() + offset);
+        dates.push(futureDate.toISOString().split("T")[0]); // YYYY-MM-DD
+      }
+      return dates;
+    }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    const form = document.getElementById("flightSearchForm");
-    const resultsContainer = document.getElementById("resultsContainer");
+    function generateRandomPrice() {
+      return (200 + Math.random() * 300).toFixed(2); // 200–500
+    }
 
-    form.addEventListener("submit", (e) => {
+    function generateRandomDuration() {
+      const hours = 2 + Math.floor(Math.random() * 11);
+      const mins = [0, 15, 30, 45][Math.floor(Math.random() * 4)];
+      return `${hours}h ${String(mins).padStart(2, "0")}m`;
+    }
+
+    // --- Handle form submission (search flights) ---
+    document.getElementById("flightSearchForm").addEventListener("submit", function(e) {
       e.preventDefault();
 
       const from = document.getElementById("fromInput").value.trim();
       const to = document.getElementById("toInput").value.trim();
       const dateInput = document.getElementById("dateInput").value;
-      const passengers = parseInt(
-        document.getElementById("passengersInput").value,
-        10
-      ) || 1;
+      const passengers = parseInt(document.getElementById("passengersInput").value, 10) || 1;
       const flexible = document.getElementById("flexibleToggle").checked;
 
+      const resultsContainer = document.getElementById("resultsContainer");
       resultsContainer.innerHTML = "";
 
       if (!from || !to) {
-        resultsContainer.innerHTML =
-          "<div class='text-red-500'>Please enter both departure and destination cities.</div>";
+        resultsContainer.innerHTML = "<div class='text-red-500'>Please enter both departure and destination cities.</div>";
         return;
       }
 
-      // If flexible, show 3 different dates; else only 1 date
-      const baseDate = dateInput || randomDateWithin60Days();
+      // Use 3 random dates if flexible, otherwise use selected date (or one random if empty)
       const dates = flexible
-        ? [baseDate, randomDateWithin60Days(), randomDateWithin60Days()]
-        : [baseDate];
+        ? generateRandomDates(3)
+        : [dateInput || generateRandomDates(1)[0]];
 
-      dates.forEach((date) => {
-        const airline = "SkyWings";
-        const price = randomPrice();
-        const duration = randomDuration();
+      dates.forEach(date => {
+        const airline = AIRLINES[Math.floor(Math.random() * AIRLINES.length)];
+        const price = generateRandomPrice();
+        const duration = generateRandomDuration();
         const total = (price * passengers).toFixed(2);
 
+        // Create card
         const card = document.createElement("div");
         card.className = "bg-white card rounded-xl p-4 flex flex-col gap-2";
-        card.dataset.flight = JSON.stringify({
-          from,
-          to,
-          date,
-          airline,
-          passengers,
-          price,
-          total,
-          duration,
-        });
-
         card.innerHTML = `
           <div class="flex justify-between">
             <div>
               <div class="font-semibold">${from} → ${to}</div>
               <div class="muted text-[12px]">
-                ${date} • ${airline} • ${duration}
+                ${date || "No date selected"} • ${airline} • ${duration}
               </div>
               <div class="muted text-[12px]">Passengers: ${passengers}</div>
             </div>
@@ -242,58 +250,61 @@
           </button>
         `;
 
+        // Store flight data on the element for later
+        card.dataset.flight = JSON.stringify({
+          from,
+          to,
+          date: date || null,
+          airline,
+          duration,
+          price,
+          passengers,
+          total
+        });
+
         resultsContainer.appendChild(card);
       });
 
       attachSelectHandlers();
     });
 
-    // Shuffle button for fun
+    // --- Add behaviour for "Select Flight" buttons ---
+    function attachSelectHandlers() {
+      const buttons = document.querySelectorAll(".select-btn");
+      buttons.forEach(btn => {
+        btn.onclick = (e) => {
+          const card = e.target.closest("[data-flight]");
+          const flight = JSON.parse(card.dataset.flight);
+
+          // Save to localStorage
+          const existing = JSON.parse(localStorage.getItem("bookedFlights") || "[]");
+          existing.push(flight);
+          localStorage.setItem("bookedFlights", JSON.stringify(existing));
+
+          alert(
+            `Flight selected!\n\n` +
+            `${flight.from} → ${flight.to}\n` +
+            `${flight.airline} • ${flight.date || "Flexible date"} • ${flight.duration}\n\n` +
+            `Passengers: ${flight.passengers}\n` +
+            `Total: $${flight.total}\n\n` +
+            `Saved to your Dashboard.`
+          );
+        };
+      });
+    }
+
+    // --- Shuffle button logic ---
     document.getElementById("shuffleBtn").addEventListener("click", () => {
-      const cities = [
-        "New York (JFK)", "Los Angeles (LAX)", "Chicago (ORD)", "Dallas (DFW)",
-        "Miami (MIA)", "London (LHR)", "Paris (CDG)", "Tokyo (HND)", "Dubai (DXB)"
-      ];
-      const fromIndex = Math.floor(Math.random() * cities.length);
+      const fromIndex = Math.floor(Math.random() * CITY_CODES.length);
       let toIndex;
-      do { toIndex = Math.floor(Math.random() * cities.length); }
-      while (toIndex === fromIndex);
+      do {
+        toIndex = Math.floor(Math.random() * CITY_CODES.length);
+      } while (toIndex === fromIndex);
 
-      document.getElementById("fromInput").value = cities[fromIndex];
-      document.getElementById("toInput").value = cities[toIndex];
-      document.getElementById("dateInput").value = randomDateWithin60Days();
+      document.getElementById("fromInput").value = CITY_CODES[fromIndex];
+      document.getElementById("toInput").value = CITY_CODES[toIndex];
+      document.getElementById("dateInput").value = generateRandomDates(1)[0];
     });
-  });
-
-  function attachSelectHandlers() {
-    const buttons = document.querySelectorAll(".select-btn");
-    buttons.forEach((btn) => {
-      btn.onclick = (e) => {
-        const card = e.target.closest("[data-flight]");
-        const flight = JSON.parse(card.dataset.flight);
-
-        // read existing list
-        const existing =
-          JSON.parse(localStorage.getItem("bookedFlights") || "[]");
-
-        // add this flight
-        existing.push(flight);
-
-        // save back
-        localStorage.setItem("bookedFlights", JSON.stringify(existing));
-
-        alert(
-          "Flight booked!\n\n" +
-          `${flight.from} → ${flight.to}\n` +
-          `${flight.airline} • ${flight.date} • ${flight.duration}\n\n` +
-          `Passengers: ${flight.passengers}\n` +
-          `Total: $${flight.total}\n\n` +
-          "Saved to your Dashboard on this browser."
-        );
-      };
-    });
-  }
-  // === END Simran flights script ===
-</script>
+  </script>
 </body>
 </html>
