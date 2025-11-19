@@ -78,9 +78,9 @@
       <a href="/pages/destinations.html" class="bg-gold text-black px-8 py-3 rounded-lg font-semibold hover:brightness-95 transition shadow-lg">
         Explore Destinations
       </a>
-      <button class="border border-gold text-gold px-8 py-3 rounded-lg font-semibold hover:bg-gold hover:text-black transition">
+      <a href="/pages/tripPlanner.html" class="border border-gold text-gold px-8 py-3 rounded-lg font-semibold hover:bg-gold hover:text-black transition">
         Plan Your Trip
-      </button>
+      </a>
     </div>
 
     <!-- Stats -->
@@ -134,7 +134,7 @@
           <div class="flex items-center justify-between mb-4">
             <span class="text-sm text-white/60">Best time: Apr - Oct</span>
           </div>
-          <a href="/pages/flights.html" class="text-gold hover:text-yellow-300 font-semibold flex items-center gap-2">
+          <a href="/pages/destinations.html" class="text-gold hover:text-yellow-300 font-semibold flex items-center gap-2">
             Explore → 
           </a>
         </div>
@@ -160,7 +160,7 @@
           <div class="flex items-center justify-between mb-4">
             <span class="text-sm text-white/60">Best time: Mar - May, Sep - Nov</span>
           </div>
-          <a href="/pages/flights.html" class="text-gold hover:text-yellow-300 font-semibold flex items-center gap-2">
+          <a href="/pages/destinations.html" class="text-gold hover:text-yellow-300 font-semibold flex items-center gap-2">
             Explore → 
           </a>
         </div>
@@ -186,7 +186,7 @@
           <div class="flex items-center justify-between mb-4">
             <span class="text-sm text-white/60">Best time: Dec - Mar</span>
           </div>
-          <a href="/pages/flights.html" class="text-gold hover:text-yellow-300 font-semibold flex items-center gap-2">
+          <a href="/pages/destinations.html" class="text-gold hover:text-yellow-300 font-semibold flex items-center gap-2">
             Explore → 
           </a>
         </div>
@@ -218,7 +218,7 @@
           <p class="text-white/70 mb-6">
             Create detailed itineraries with smart recommendations and manage every aspect of your journey
           </p>
-          <a href="/pages/tripPlanner.html" class="text-gold hover:text-yellow-300 font-semibold flex items-center gap-2">
+          <a href="/pages/personal_dashboard.html" class="text-gold hover:text-yellow-300 font-semibold flex items-center gap-2">
             Start Planning →
           </a>
         </div>
@@ -260,7 +260,7 @@
           <p class="text-white/70 mb-6">
             Discover destinations that match your preferences and travel style instantly
           </p>
-          <a href="/pages/flights.html" class="text-gold hover:text-yellow-300 font-semibold flex items-center gap-2">
+          <a href="/pages/destinations.html" class="text-gold hover:text-yellow-300 font-semibold flex items-center gap-2">
             Start Searching →
           </a>
         </div>
@@ -552,6 +552,16 @@
       if (e.key === 'Escape') {
         closeModal();
       }
+    });
+
+    // Prevent links inside destination cards from triggering the card's onclick
+    document.addEventListener('DOMContentLoaded', () => {
+      const cardLinks = document.querySelectorAll('.destination-card a');
+      cardLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+      });
     });
   </script>
 
