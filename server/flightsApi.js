@@ -1,66 +1,88 @@
 // server/flightsApi.js
-// backend for saving & loading booked flights
+const { Pool } = require("pg");
 
-const fs = require("fs");
-const path = require("path");
+// Create a separate pool for flights API (uses the same DATABASE_URL)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
-// bookings.json is in the ../data folder
-const BOOKINGS_PATH = path.join(__dirname, "..", "data", "bookings.json");
-
-// Helper: safely read JSON file, return [] if missing/broken
-function loadBookings() {
-  try {
-    if (!fs.existsSync(BOOKINGS_PATH)) {
-      return [];
-    }
-    const raw = fs.readFileSync(BOOKINGS_PATH, "utf-8") || "[]";
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error("Error reading bookings file:", e);
-    return [];
-  }
-}
-
-// Helper: write bookings back to file
-function saveBookings(list) {
-  try {
-    fs.writeFileSync(BOOKINGS_PATH, JSON.stringify(list, null, 2), "utf-8");
-  } catch (e) {
-    console.error("Error writing bookings file:", e);
-  }
-}
-
-// Export a function that plugs into your existing Express app
 module.exports = function flightsApi(app) {
-  // GET /api/bookings  -> return all saved bookings
-  app.get("/api/bookings", (req, res) => {
-    const bookings = loadBookings();
-    res.json(bookings);
+  // GET all bookings (for dashboard)
+  app.get("/api/bookings", async (req, res) => {
+    try {
+      const result = await pool.query(
+        "SELECT * FROM bookings ORDER BY created_at DESC"
+      );
+      return res.json(result.rows);
+    } catch (err) {
+      console.error("GET /api/bookings error:", err);
+      return res
+        .status(500)
+        .json({ success: false, error: "Failed to fetch bookings" });
+    }
   });
 
-  // POST /api/bookings -> save a new booking
-  app.post("/api/bookings", (req, res) => {
-    const b = req.body;
+  // POST a new booking (from Flights page)
+  app.post("/api/bookings", async (req, res) => {
+    try {
+      console.log("POST /api/bookings body:", req.body);
 
-    // Very basic validation
-    if (
-      !b ||
-      !b.from ||
-      !b.to ||
-      !b.airline ||
-      !b.passengers ||
-      !b.total
-    ) {
-      return res.status(400).json({ error: "Invalid booking data" });
+      const {
+        from,
+        to,
+        flight_date,
+        airline,
+        passengers,
+        price_per_person,
+        total,
+        duration,
+      } = req.body || {};
+
+      // Validate required fields
+      if (
+        !from ||
+        !to ||
+        !flight_date ||
+        !airline ||
+        passengers == null ||
+        price_per_person == null ||
+        total == null
+      ) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Missing required booking fields" });
+      }
+
+      const query = `
+        INSERT INTO bookings
+          (from_city, to_city, flight_date, airline,
+           passengers, price_per_person, total, duration)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING *;
+      `;
+
+      const values = [
+        from,
+        to,
+        flight_date,
+        airline,
+        Number(passengers),
+        Number(price_per_person),
+        Number(total),
+        duration || null,
+      ];
+
+      const result = await pool.query(query, values);
+
+      return res
+        .status(201)
+        .json({ success: true, booking: result.rows[0] });
+    } catch (err) {
+      console.error("POST /api/bookings insert error:", err);
+      return res
+        .status(500)
+        .json({ success: false, error: "Failed to save booking" });
     }
-
-    const bookings = loadBookings();
-    bookings.push({
-      ...b,
-      createdAt: new Date().toISOString(),
-    });
-    saveBookings(bookings);
-
-    res.json({ success: true, message: "Booking saved on server" });
   });
 };

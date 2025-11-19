@@ -2,12 +2,12 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const { Pool } = require("pg");
 const { randomUUID } = require("crypto");
-const flightsApi = require("./flightsApi");
+const flightsApi = require("./flightsAPI");
 
 
-require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
 const session = require("express-session");
 const PgSession = require("connect-pg-simple")(session);
@@ -26,7 +26,8 @@ app.use(express.static(publicDir));
 console.log("Serving static from:", publicDir);
 
 // DB
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL , ssl: {rejectUnauthorized: false},
+});
 
 // Sessions (ONE instance)
 app.use(
@@ -385,65 +386,6 @@ app.get("/pages/destinations.html", (_req, res) =>
 
 flightsApi(app);
 
-
-// === Simran: Bookings API (uses Neon via pool) ===
-
-// Get all bookings
-app.get("/api/bookings", async (req, res) => {
-  try {
-    const result = await pool.query(
-      "SELECT * FROM bookings ORDER BY created_at DESC"
-    );
-    res.json(result.rows);
-  } catch (err) {
-    console.error("Error fetching bookings:", err);
-    res.status(500).json({ error: "Failed to fetch bookings" });
-  }
-});
-
-// Create a new booking
-app.post("/api/bookings", async (req, res) => {
-  try {
-    const b = req.body;
-
-    if (
-      !b.from ||
-      !b.to ||
-      !b.date ||
-      !b.airline ||
-      !b.passengers ||
-      !b.price ||
-      !b.total
-    ) {
-      return res.status(400).json({ error: "Missing booking fields" });
-    }
-
-    const query = `
-      INSERT INTO bookings
-      (from_city, to_city, flight_date, airline, passengers, price_per_person, total, duration)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *;
-    `;
-
-    const values = [
-      b.from,
-      b.to,
-      b.date,
-      b.airline,
-      b.passengers,
-      b.price,
-      b.total,
-      b.duration || null,
-    ];
-
-    const result = await pool.query(query, values);
-    res.json({ success: true, booking: result.rows[0] });
-  } catch (err) {
-    console.error("Error inserting booking:", err);
-    res.status(500).json({ error: "Failed to save booking" });
-  }
-});
-// === End Simran: Bookings API ===
 
 // Start
 const PORT = process.env.PORT || 3000;
