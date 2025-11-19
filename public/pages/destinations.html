@@ -30,9 +30,15 @@
     .chip:hover{background:rgba(255,255,255,.18);cursor:pointer}
     .chip.active{box-shadow:0 0 0 2px #FFC300 inset}
     .pill{background:rgba(255,195,0,.18);color:#FFC300;padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.875rem;font-weight:500}
-    .destination-card{background:linear-gradient(135deg, rgba(0,24,20,.4), rgba(0,53,102,.3));border:1px solid rgba(255,255,255,.1);border-radius:1rem;overflow:hidden;transition:all .3s}
+    .destination-card{background:linear-gradient(135deg, rgba(0,24,20,.4), rgba(0,53,102,.3));border:1px solid rgba(255,255,255,.1);border-radius:1rem;overflow:hidden;transition:all .3s;cursor:pointer}
     .destination-card:hover{transform:translateY(-4px);background:linear-gradient(135deg, rgba(0,24,20,.6), rgba(0,53,102,.5))}
     .rating{display:inline-flex;align-items:center;gap:0.25rem;background:rgba(255,195,0,.2);padding:0.25rem 0.75rem;border-radius:9999px;font-size:0.875rem;color:#FFC300;font-weight:600}
+    .modal{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,8,20,.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:1rem}
+    .modal.active{display:flex}
+    .modal-content{background:linear-gradient(135deg, rgba(0,29,61,.95), rgba(0,53,102,.95));border:1px solid rgba(255,255,255,.15);border-radius:1.5rem;max-width:900px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+    .modal-content::-webkit-scrollbar{width:8px}
+    .modal-content::-webkit-scrollbar-track{background:rgba(255,255,255,.05)}
+    .modal-content::-webkit-scrollbar-thumb{background:rgba(255,195,0,.3);border-radius:4px}
   </style>
 </head>
 <body class="min-h-screen bg-gradient-to-b from-twilight via-twilightSoft/70 to-sand/60 text-white">
@@ -136,6 +142,15 @@
       </div>
     </div>
   </footer>
+
+  <!-- Modal -->
+  <div id="destinationModal" class="modal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div id="modalBody">
+        <!-- Content will be dynamically inserted -->
+      </div>
+    </div>
+  </div>
 
   <script src="../js/destinations.js"></script>
 </body>
