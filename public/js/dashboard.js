@@ -398,7 +398,7 @@ async function loadHotels() {
 
   /* ------------------ Flights / Bookings ------------------ */
 
-const bookingsList = document.querySelector("#activityList");   // 👈 matches Dashboard.html
+const bookingsList = document.querySelector("#flights-list");   // 👈 matches Dashboard.html
 const kpiFlights = document.querySelector("#kpiFlights");       // optional KPI counter
 
 function bookingCard(b) {
