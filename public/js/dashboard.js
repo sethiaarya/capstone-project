@@ -396,6 +396,51 @@ async function loadHotels() {
   for (const h of items) hotelsList.appendChild(hotelCard(h));
 }
 
+  /* ------------------ Flights / Bookings ------------------ */
+
+const bookingsList = document.querySelector("#activityList");   // 👈 matches Dashboard.html
+const kpiFlights = document.querySelector("#kpiFlights");       // optional KPI counter
+
+function bookingCard(b) {
+  const card = document.createElement("div");
+  card.className = "border border-[color:var(--line)] rounded-xl p-3";
+
+  card.innerHTML = `
+    <div class="font-semibold">${b.from_city} → ${b.to_city}</div>
+    <div class="text-[13px] text-[color:var(--muted)]">
+      ${b.flight_date} · ${b.airline} · ${b.duration}
+    </div>
+    <div class="text-[12px] text-[color:var(--muted)]">Passengers: ${b.passengers}</div>
+    <div class="text-gold font-semibold mt-1">Total: $${b.total}</div>
+  `;
+  return card;
+}
+
+async function loadBookings() {
+  try {
+    const items = await req("/api/bookings");   // 👈 calls backend
+    if (kpiFlights) kpiFlights.textContent = items.length;
+
+    clearNode(bookingsList);
+
+    if (!items.length) {
+      const empty = document.createElement("div");
+      empty.className = "border border-[color:var(--line)] rounded-xl p-3 text-[color:var(--muted)]";
+      empty.textContent = "No booked flights yet.";
+      bookingsList.appendChild(empty);
+      return;
+    }
+
+    for (const b of items) bookingsList.appendChild(bookingCard(b));
+  } catch (err) {
+    console.error("Error loading bookings:", err);
+  }
+}
+
+// 👈 Call it when dashboard loads
+loadBookings();
+
+
 /* ------------------ AUTH (single, clean) ------------------ */
 function setUserUI(me) {
   const statusLabel = document.querySelector("#statusLabel");
@@ -655,4 +700,35 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 // === END Simran section ===
+
+async function loadBookings() {
+  const res = await fetch("/api/bookings");
+  const bookings = await res.json();
+
+  const list = document.getElementById("flights-List");
+  list.innerHTML = "";
+
+  if (!bookings.length) {
+    list.innerHTML = "<div class='text-slate-500'>No activity yet.</div>";
+    return;
+  }
+
+  bookings.forEach(b => {
+    const item = document.createElement("div");
+    item.className = "bg-white rounded-xl p-4 shadow";
+    item.innerHTML = `
+      <div class="font-semibold">${b.from_city} → ${b.to_city}</div>
+      <div class="muted">Date: ${b.flight_date}</div>
+      <div class="muted">Airline: ${b.airline}</div>
+      <div class="muted">Passengers: ${b.passengers}</div>
+      <div class="muted">Duration: ${b.duration}</div>
+      <div class="text-gold font-semibold mt-1">Total: $${b.total}</div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+loadBookings();
+
+
 });

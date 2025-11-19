@@ -1,66 +1,38 @@
 // server/flightsApi.js
-// backend for saving & loading booked flights
+const { Pool } = require("pg");
 
-const fs = require("fs");
-const path = require("path");
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
-// bookings.json is in the ../data folder
-const BOOKINGS_PATH = path.join(__dirname, "..", "data", "bookings.json");
-
-// Helper: safely read JSON file, return [] if missing/broken
-function loadBookings() {
-  try {
-    if (!fs.existsSync(BOOKINGS_PATH)) {
-      return [];
-    }
-    const raw = fs.readFileSync(BOOKINGS_PATH, "utf-8") || "[]";
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error("Error reading bookings file:", e);
-    return [];
-  }
-}
-
-// Helper: write bookings back to file
-function saveBookings(list) {
-  try {
-    fs.writeFileSync(BOOKINGS_PATH, JSON.stringify(list, null, 2), "utf-8");
-  } catch (e) {
-    console.error("Error writing bookings file:", e);
-  }
-}
-
-// Export a function that plugs into your existing Express app
 module.exports = function flightsApi(app) {
-  // GET /api/bookings  -> return all saved bookings
-  app.get("/api/bookings", (req, res) => {
-    const bookings = loadBookings();
-    res.json(bookings);
+  // GET /api/bookings -> return all saved bookings
+  app.get("/api/bookings", async (req, res) => {
+    try {
+      const result = await pool.query("SELECT * FROM bookings ORDER BY created_at DESC");
+      res.json(result.rows);
+    } catch (err) {
+      console.error("Error fetching bookings:", err);
+      res.status(500).json({ error: "Database error" });
+    }
   });
 
   // POST /api/bookings -> save a new booking
-  app.post("/api/bookings", (req, res) => {
+  app.post("/api/bookings", async (req, res) => {
     const b = req.body;
 
-    // Very basic validation
-    if (
-      !b ||
-      !b.from ||
-      !b.to ||
-      !b.airline ||
-      !b.passengers ||
-      !b.total
-    ) {
-      return res.status(400).json({ error: "Invalid booking data" });
+    try {
+      await pool.query(
+        `INSERT INTO bookings (from_city, to_city, flight_date, airline, passengers, price_per_person, total, duration)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [b.from, b.to, b.flight_date, b.airline, b.passengers, b.price_per_person, b.total, b.duration]
+      );
+
+      res.json({ success: true, message: "Booking saved in Neon DB" });
+    } catch (err) {
+      console.error("Error saving booking:", err);
+      res.status(500).json({ error: "Database error" });
     }
-
-    const bookings = loadBookings();
-    bookings.push({
-      ...b,
-      createdAt: new Date().toISOString(),
-    });
-    saveBookings(bookings);
-
-    res.json({ success: true, message: "Booking saved on server" });
   });
 };

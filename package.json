@@ -30,5 +30,4 @@
     "mocha": "^11.7.5",
     "selenium-webdriver": "^4.38.0"
   }
-  
 }
