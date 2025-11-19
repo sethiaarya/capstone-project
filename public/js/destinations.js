@@ -149,6 +149,156 @@ const destinations = [
     bestTime: "Mar - May, Sep - Nov",
     tags: ["culture", "adventure", "food"],
     weather: "Desert Magic"
+  },
+  {
+    name: "Thailand",
+    country: "Thailand",
+    image: "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=500&h=400&fit=crop",
+    description: "Tropical beaches, ornate temples, vibrant street food, and warm hospitality",
+    rating: 4.7,
+    bestTime: "Nov - Feb",
+    tags: ["beach", "culture", "food"],
+    weather: "Tropical Paradise"
+  },
+  {
+    name: "Amsterdam",
+    country: "Netherlands",
+    image: "https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=500&h=400&fit=crop",
+    description: "Charming canals, historic architecture, world-class museums, and cycling culture",
+    rating: 4.6,
+    bestTime: "Apr - May, Sep - Nov",
+    tags: ["city", "culture"],
+    weather: "Spring Beauty"
+  },
+  {
+    name: "Norway Fjords",
+    country: "Norway",
+    image: "https://images.unsplash.com/photo-1601439678777-b2b3c56fa627?w=500&h=400&fit=crop",
+    description: "Dramatic fjords, stunning waterfalls, Northern Lights, and pristine wilderness",
+    rating: 4.9,
+    bestTime: "May - Sep",
+    tags: ["mountain", "adventure"],
+    weather: "Midnight Sun"
+  },
+  {
+    name: "Cairo",
+    country: "Egypt",
+    image: "https://images.unsplash.com/photo-1572252009286-268acec5ca0a?w=500&h=400&fit=crop",
+    description: "Ancient pyramids, Sphinx, pharaonic history, and the mighty Nile River",
+    rating: 4.5,
+    bestTime: "Oct - Apr",
+    tags: ["culture", "adventure"],
+    weather: "Ancient Wonders"
+  },
+  {
+    name: "Vancouver",
+    country: "Canada",
+    image: "https://images.unsplash.com/photo-1559511260-66a654ae982a?w=500&h=400&fit=crop",
+    description: "Mountain backdrop, ocean views, diverse neighborhoods, and outdoor adventures",
+    rating: 4.7,
+    bestTime: "Jun - Sep",
+    tags: ["city", "mountain", "adventure"],
+    weather: "Pacific Northwest"
+  },
+  {
+    name: "Vietnam",
+    country: "Vietnam",
+    image: "https://images.unsplash.com/photo-1528127269322-539801943592?w=500&h=400&fit=crop",
+    description: "Ha Long Bay, ancient towns, delicious cuisine, and rich cultural heritage",
+    rating: 4.6,
+    bestTime: "Feb - Apr, Aug - Oct",
+    tags: ["beach", "culture", "food", "adventure"],
+    weather: "Southeast Asian Gem"
+  },
+  {
+    name: "Ireland",
+    country: "Ireland",
+    image: "https://images.unsplash.com/photo-1590089415225-401ed6f9db8e?w=500&h=400&fit=crop",
+    description: "Rolling green hills, dramatic cliffs, historic castles, and lively pub culture",
+    rating: 4.7,
+    bestTime: "May - Sep",
+    tags: ["culture", "adventure"],
+    weather: "Emerald Isle"
+  },
+  {
+    name: "Singapore",
+    country: "Singapore",
+    image: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=500&h=400&fit=crop",
+    description: "Modern architecture, incredible food scene, lush gardens, and multicultural vibes",
+    rating: 4.8,
+    bestTime: "Feb - Apr",
+    tags: ["city", "food", "culture"],
+    weather: "Urban Garden"
+  },
+  {
+    name: "Croatia",
+    country: "Croatia",
+    image: "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=500&h=400&fit=crop",
+    description: "Adriatic coastline, medieval towns, crystal-clear waters, and island hopping",
+    rating: 4.7,
+    bestTime: "May - Sep",
+    tags: ["beach", "culture", "adventure"],
+    weather: "Mediterranean Dream"
+  },
+  {
+    name: "Scottish Highlands",
+    country: "Scotland",
+    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&h=400&fit=crop",
+    description: "Rugged mountains, historic castles, lochs, whisky distilleries, and Highland culture",
+    rating: 4.6,
+    bestTime: "May - Sep",
+    tags: ["mountain", "culture", "adventure"],
+    weather: "Highland Magic"
+  },
+  {
+    name: "Argentina",
+    country: "Argentina",
+    image: "https://images.unsplash.com/photo-1589909202802-8f4aadce1849?w=500&h=400&fit=crop",
+    description: "Tango dancing, wine country, glaciers, vibrant Buenos Aires, and Patagonian wilderness",
+    rating: 4.7,
+    bestTime: "Oct - Apr",
+    tags: ["culture", "food", "adventure", "mountain"],
+    weather: "South American Passion"
+  },
+  {
+    name: "Turkey",
+    country: "Turkey",
+    image: "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=500&h=400&fit=crop",
+    description: "Ancient ruins, hot air balloons in Cappadocia, bazaars, and Turkish delights",
+    rating: 4.6,
+    bestTime: "Apr - May, Sep - Nov",
+    tags: ["culture", "food", "adventure"],
+    weather: "East Meets West"
+  },
+  {
+    name: "South Africa",
+    country: "South Africa",
+    image: "https://images.unsplash.com/photo-1484318571209-661cf29a69c3?w=500&h=400&fit=crop",
+    description: "Safari adventures, Cape Town beauty, wine regions, and diverse landscapes",
+    rating: 4.7,
+    bestTime: "May - Sep",
+    tags: ["adventure", "beach", "mountain"],
+    weather: "Safari Season"
+  },
+  {
+    name: "Portugal",
+    country: "Portugal",
+    image: "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=500&h=400&fit=crop",
+    description: "Coastal beauty, historic Lisbon, port wine, colorful tiles, and warm sunshine",
+    rating: 4.7,
+    bestTime: "Mar - May, Sep - Oct",
+    tags: ["beach", "culture", "food", "city"],
+    weather: "Atlantic Coast"
+  },
+  {
+    name: "Nepal",
+    country: "Nepal",
+    image: "https://images.unsplash.com/photo-1605640840605-14ac1855827b?w=500&h=400&fit=crop",
+    description: "Home to Mount Everest, ancient temples, Himalayan treks, and spiritual heritage",
+    rating: 4.8,
+    bestTime: "Oct - Nov, Mar - May",
+    tags: ["mountain", "adventure", "culture"],
+    weather: "Himalayan Wonder"
   }
 ];
 
@@ -178,8 +328,8 @@ function renderDestinations() {
 
   noResults.classList.add("hidden");
   
-  grid.innerHTML = filtered.map(dest => `
-    <div class="destination-card">
+  grid.innerHTML = filtered.map((dest, index) => `
+    <div class="destination-card" onclick="openModal(${index})">
       <div class="relative h-64 overflow-hidden">
         <img src="${dest.image}" 
              alt="${dest.name}" 
@@ -275,3 +425,96 @@ function applyURLParams() {
 
 // Initial render
 applyURLParams();
+
+// Modal functions
+function openModal(index) {
+  const dest = destinations[index];
+  const modal = document.getElementById('destinationModal');
+  const modalBody = document.getElementById('modalBody');
+  
+  modalBody.innerHTML = `
+    <div class="relative">
+      <!-- Close Button -->
+      <button onclick="closeModal()" class="absolute top-4 right-4 z-10 bg-twilight/80 hover:bg-twilight text-white rounded-full w-10 h-10 flex items-center justify-center transition">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+
+      <!-- Hero Image -->
+      <div class="relative h-96 overflow-hidden rounded-t-2xl">
+        <img src="${dest.image}" alt="${dest.name}" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-gradient-to-t from-twilight/80 to-transparent"></div>
+        <div class="absolute bottom-6 left-6 right-6">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="pill">${getWeatherEmoji(dest.tags)} ${dest.weather}</span>
+            <div class="rating text-base">${dest.rating}</div>
+          </div>
+          <h2 class="text-4xl font-bold mb-2">${dest.name}</h2>
+          <p class="text-white/80 text-lg">${dest.country}</p>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="p-8">
+        <!-- Description -->
+        <div class="mb-8">
+          <h3 class="text-2xl font-bold mb-3">About</h3>
+          <p class="text-white/80 leading-relaxed">${dest.description}</p>
+        </div>
+
+        <!-- Quick Info -->
+        <div class="grid md:grid-cols-2 gap-4 mb-8">
+          <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+            <div class="text-gold font-semibold mb-1">Best Time to Visit</div>
+            <div class="text-white/80">${dest.bestTime}</div>
+          </div>
+          <div class="bg-white/5 rounded-xl p-4 border border-white/10">
+            <div class="text-gold font-semibold mb-1">Rating</div>
+            <div class="text-white/80">${dest.rating} ⭐ out of 5</div>
+          </div>
+        </div>
+
+        <!-- Tags -->
+        <div class="mb-8">
+          <h3 class="text-2xl font-bold mb-4">Experience Types</h3>
+          <div class="flex flex-wrap gap-2">
+            ${dest.tags.map(tag => `
+              <span class="px-4 py-2 bg-white/10 rounded-full text-sm border border-white/10 text-white/80 capitalize">
+                ${tag}
+              </span>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-4 pt-4">
+          <a href="/pages/flights.html" class="flex-1 bg-gold text-black px-6 py-3 rounded-lg font-semibold hover:brightness-95 transition text-center">
+            Book Flights
+          </a>
+          <a href="/pages/personal_dashboard.html" class="flex-1 border border-gold text-gold px-6 py-3 rounded-lg font-semibold hover:bg-gold hover:text-black transition text-center">
+            Add to Wishlist
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(event) {
+  if (!event || event.target.id === 'destinationModal') {
+    const modal = document.getElementById('destinationModal');
+    modal.classList.remove('active');
+    document.body.style.overflow = 'auto';
+  }
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeModal();
+  }
+});
